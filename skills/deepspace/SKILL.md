@@ -88,7 +88,11 @@ const { isSignedIn } = useAuth()
 if (!isSignedIn) return <AuthOverlay />
 ```
 
-### Step 5: Build Pages and Features
+### Step 5: Pick a Theme
+
+Before building pages, rewrite the `@theme` block in `src/styles.css` and update `<title>` / favicon in `index.html` so subsequent UI reflects the real brand instead of default dark-blue. If the user didn't specify a palette, pick one that fits the app's domain and tell them in one line. See `references/uiux.md` §2 for palette guidance and tokens to override.
+
+### Step 6: Build Pages and Features
 
 Pages go in `src/pages/` — generouted scans this directory for file-based routing.
 
@@ -100,15 +104,17 @@ src/pages/_app.tsx    → layout wrapper (providers + nav)
 
 Features are reference implementations in `.deepspace/features/` (scaffolded into every app). To add one: read `.deepspace/features/<name>/FEATURE.md`, copy files to specified destinations, wire imports/routes/schemas.
 
+Replace the scaffold home page, wire mutations to `useToast`, and use scaffolded UI primitives from `src/components/ui/` — never browser defaults. Load `references/uiux.md` when building the first page or when the app "feels generic".
+
 Available features (check `.deepspace/features/` in the scaffolded app for the canonical list — names may evolve): `admin-page`, `ai-chat`, `canvas`, `cron`, `docs`, `file-manager`, `integration-test`, `items`, `kanban`, `landing`, `leaderboard`, `messaging`, `presence-test`, `sidebar`, `tasks`, `testing`, `topbar`, `tree`.
 
-### Step 6: Run Locally
+### Step 7: Run Locally
 
 ```bash
 npx deepspace dev     # starts all workers + Vite with HMR on localhost:5173
 ```
 
-### Step 7: Test-Driven Verification (run when code changes)
+### Step 8: Test-Driven Verification (run when code changes)
 
 Tests are the primary way to verify and debug code changes. The scaffolded tests (`smoke.spec.ts`, `api.spec.ts`, `collab.spec.ts`) are **starting points** — extend them for every code change that affects runtime behavior.
 
@@ -132,10 +138,12 @@ Tests are the primary way to verify and debug code changes. The scaffolded tests
 
 Skipping tests after a code change is the #1 source of "I built it but it crashes on page load" handoffs.
 
-### Step 8: Deploy
+### Step 9: Deploy
+
+Before running deploy, verify the pre-deploy checklist in `references/uiux.md` §5 (home replaced, theme updated, no browser-default primitives, mutations fire toasts). Then:
 
 ```bash
-npx deepspace login
+npx deepspace login  # opens browser — the ONE human step in the whole flow
 npx deepspace deploy  # deploys to <app-name>.app.space
 ```
 
@@ -251,6 +259,10 @@ const result = await integration.post('openweathermap/geocoding', { q: city })
 
 **For the full list of available integrations and endpoints, read `references/integrations.md`.** It covers LLMs (OpenAI, Anthropic, Gemini), search (Exa, Firecrawl, SerpAPI), media (Freepik, ElevenLabs, CloudConvert), communication (Email, Slack, LiveKit), Google Workspace (Gmail, Drive, Calendar), social (GitHub, LinkedIn, YouTube, TikTok, Instagram), finance (Polymarket, stocks, crypto), sports, NASA, MTA, Wikipedia, and more. Always verify the endpoint exists in that reference before calling it.
 
+## UI/UX Polish
+
+The scaffold's home page, theme, and UI primitive choices are placeholders — shipping them as-is produces a generic-looking app. **Load `references/uiux.md`** for the full checklist (home page requirements, palette picker, primitives-vs-browser-defaults table, interaction polish, smoke-test assertions) whenever building the home page, customizing theme, wiring mutations to feedback, or when the user says the app "feels generic".
+
 ## Testing
 
 Every scaffolded app includes Playwright tests in `tests/` with helpers for auth, error tracking, and multi-user flows. Use these tests to verify your work — don't rely on manual testing or console logs to debug issues.
@@ -269,6 +281,9 @@ Dev server must be running (`npx deepspace dev`) before running tests.
 - `smoke.spec.ts` — app loads, navigation renders, sign-in button present, page title correct
 - `api.spec.ts` — API endpoints return expected responses, auth required where expected
 - `collab.spec.ts` — multi-user: two users connect, see each other, data syncs between them
+- `tests/feature-tests/tests/<feature-id>.spec.ts` — per-feature merge-gate specs (e.g., `docs.spec.ts` for the docs feature). Auto-discovered and run by the e2e harness when the feature is installed. When you add a custom feature, drop a `<feature-id>.spec.ts` alongside the others with multi-user assertions.
+
+Playwright runs with `retries: 1` locally (2 in CI) to absorb subprocess flakes; real bugs fail all retries. `trace: 'retain-on-failure'` preserves the full trace in `test-results/` for forensics.
 
 ### Test Helpers (`tests/helpers/`)
 
@@ -328,8 +343,6 @@ These are concrete issues discovered in real dev sessions. Read before building.
 - **Service bindings unavailable in local dev** — `c.env.API_WORKER.fetch()` doesn't exist locally. Use `API_WORKER_URL` env var as fallback: `env.API_WORKER?.fetch(req) ?? fetch(env.API_WORKER_URL + path)`.
 - **Integration response format** — api-worker returns `{ success: true, data: [...] }` where `data` may be a flat array. Don't look for `result.data.forecast` or `result.data.list` — check `Array.isArray(result.data)`.
 - **Cross-app workspace isolation** — Each app worker has its own DO namespace. `workspace:default` in app A is a different DO instance than `workspace:default` in app B. For shared data, route `workspace:*` WebSocket connections through `PLATFORM_WORKER`.
-- **Miniflare version pinned** — Do not upgrade miniflare past `4.20251217.0`. Newer versions crash on POST requests returning non-2xx status codes.
-- **`@cloudflare/vite-plugin` version** — After scaffolding, pin `@cloudflare/vite-plugin` to `1.31.2` in `package.json` (remove the `^`). Versions `1.32.0+` import `CorePaths` from miniflare which doesn't exist in the pinned `4.20251217.0`. Run `npm install @cloudflare/vite-plugin@1.31.2` if the dev server fails with `SyntaxError: Named export 'CorePaths' not found`.
 - **`createChannel()` defaults to `Visibility: 'public'`** — This means all users see all conversations. Override with `Visibility: 'private'` and set `ParticipantIds` for user-scoped data.
 - **Schemas are columns only** — no `fields` property, no document-mode storage.
 - **JWT provides user profile** — no separate `/api/users/me` call needed.

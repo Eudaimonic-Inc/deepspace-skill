@@ -124,6 +124,7 @@ const result = await integration.post('<integration-name>/<endpoint-name>', { ..
 - `email/send` — send transactional email
 
 ### slack
+Pass a workspace bot/user `accessToken` in the request body — there is no OAuth callback flow from the SDK side; obtain the token out of band.
 - `slack/send-message`
 - `slack/list-channels`
 - `slack/channel-history`
