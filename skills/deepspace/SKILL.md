@@ -287,28 +287,90 @@ Playwright runs with `retries: 1` locally (2 in CI) to absorb subprocess flakes;
 
 ### Test Helpers (`tests/helpers/`)
 
-- `auth.ts` — `createTestUsers(browser, count)` creates N users with isolated browser contexts. Each user gets a unique email and signs up via `/api/auth/sign-up/email`.
+- `auth.ts` — ships with `signUp(page, email)` and `createTestUsers(browser, count)`. **Both are currently broken in local dev** because they POST to `/api/auth/sign-up/email`, which the platform auth worker rejects with 403 ("Public signup disabled"). Do not use them as-is; use the test-accounts flow below instead.
 - `global-setup.ts` — warms up the auth worker with retries before tests run.
 - `errors.ts` — captures console errors and page errors during tests.
 
+### Authenticated tests — use `npx deepspace test-accounts`
+
+Public signup is intentionally disabled. Tests sign in (not sign up) using credentials created via the `deepspace test-accounts` CLI — the scaffold's `tests/helpers/auth.ts` already wires this up.
+
+**If `createTestUsers` throws** saying there aren't enough local accounts, the error message prints exact copy-paste commands with a `Date.now()` millisecond timestamp that keeps them globally unique across developers and machines (the auth worker enforces email uniqueness at the user-table level):
+
+```bash
+npx deepspace login   # if not already
+npx deepspace test-accounts create --email test-1-1776798210521@deepspace.test --password Pass123! --name "Test User 1"
+npx deepspace test-accounts create --email test-2-1776798210521@deepspace.test --password Pass123! --name "Test User 2"
+```
+
+Credentials persist at `~/.deepspace/test-accounts.json` (mode 0600). Emails must end `@deepspace.test`. Max 10 per developer. Run as part of the same session — don't silently skip collab tests or punt with "requires manual QA." Run `npx deepspace test-accounts --help` for the full CLI.
+
 ### Writing New Tests
 
-**Single-user flows** (CRUD, navigation, UI state): use `signUp(page, email)` from the auth helper to create one authenticated session, then interact with the page.
+**Single-user flows** (CRUD, navigation, UI state): import `signInAs` and `loadLocalAccounts` from `./helpers/auth` and sign one page in.
 
-**Multi-user flows** (real-time sync, sharing, permissions): use `createTestUsers(browser, 2)` to get isolated sessions, then act in one and assert in the other.
+**Multi-user flows** (real-time sync, sharing, permissions): use the scaffold's `createTestUsers(browser, N)` helper — it opens N isolated browser contexts, signs each into a distinct local test account, and returns `{ context, page, email, name }[]`.
 
 ```typescript
-// Multi-user pattern
-const [userA, userB] = await createTestUsers(browser, 2)
+import { createTestUsers } from './helpers/auth'
 
-// userA creates something
-await userA.page.getByTestId('create-btn').click()
-await userA.page.getByTestId('title-input').fill('My Item')
-await userA.page.getByTestId('save-btn').click()
-
-// userB should see it
-await expect(userB.page.getByText('My Item')).toBeVisible()
+test('user A's action appears for user B', async ({ browser }) => {
+  const [userA, userB] = await createTestUsers(browser, 2)
+  try {
+    await userA.page.getByTestId('create-btn').click()
+    await userA.page.getByTestId('title-input').fill('My Item')
+    await userA.page.getByTestId('save-btn').click()
+    await expect(userB.page.getByText('My Item')).toBeVisible()
+  } finally {
+    await userA.context.close()
+    await userB.context.close()
+  }
+})
 ```
+
+### Test data cleanup — tests must not pollute the dev DB
+
+Tests run against the same local Durable Object the dev server uses, so any records a test creates will still be visible in `npx deepspace dev` afterwards. That's a problem once the app has real data.
+
+**Convention every test must follow:**
+
+1. **Prefix every record you create with `__test-${Date.now()}__`** in its human-visible field (title, name, question, etc.) so test data is always recognizable.
+2. **Clean up in `afterEach` / `afterAll`**: iterate the mutations you made in the test and delete the records you created. Keep a list of created `recordId`s inside the test, then remove them.
+
+```typescript
+test('user A posts a message user B sees', async ({ browser }) => {
+  const [userA, userB] = await createTestUsers(browser, 2)
+  const created: string[] = []
+  try {
+    const title = `__test-${Date.now()}__ Hello`
+    // ... create, grab the resulting recordId, push to `created` ...
+    // ... assertions ...
+  } finally {
+    // Delete in reverse order, best-effort
+    for (const id of created.reverse()) {
+      try { await userA.page.evaluate(
+        async (recordId) => {
+          /* call your delete endpoint or mutate hook */
+        }, id,
+      ) } catch { /* swallow */ }
+    }
+    await userA.context.close()
+    await userB.context.close()
+  }
+})
+```
+
+**Do not** add a blanket "wipe the DB between tests" step — that would destroy real data the developer is working with. The cleanup must be scoped to records the test itself created. If you see a test using `DELETE FROM` or dropping collections, replace it.
+
+### Route coverage — every route must be tested
+
+A smoke test that only loads `/` (or the home page) is not enough. If a route is reachable in the app — for example, static (`/polls`) or dynamic (`/polls/:id`) — there must be a test that:
+
+1. Navigates to it (for dynamic routes: create a record first, grab its id, navigate).
+2. Waits for the page's real content to appear (not just "no crash" — assert a specific element with real data, e.g., `expect(page.getByTestId('poll-question')).toContainText(questionText)`).
+3. Fails loudly if the page renders an empty/not-found state when it shouldn't.
+
+Passing a smoke test where the detail page silently shows "Poll not found" is the failure mode that shipped the group-poll regression. A "page loads without JS errors" assertion is insufficient — assert that the data that should be there **is** there.
 
 ### Proactive Test Authoring
 
@@ -347,6 +409,7 @@ These are concrete issues discovered in real dev sessions. Read before building.
 - **Schemas are columns only** — no `fields` property, no document-mode storage.
 - **JWT provides user profile** — no separate `/api/users/me` call needed.
 - **All tests use real services** — never mock internal hooks.
+- **Port 5173 may be held by a parallel session** — if `npx deepspace dev` or `npx playwright test` fails because `5173` is in use, **do not kill** the process holding it (another agent session may be working). Start this session's dev server on a different port via `VITE_PORT=5174 npx deepspace dev` (or `5175`, `5176`, etc.) and pass the matching `baseURL` to Playwright (`npx playwright test --config tests/playwright.config.ts` with `PLAYWRIGHT_BASE_URL=http://localhost:5174`). Verify the test helper URLs (e.g., `AUTH_BASE` in `tests/helpers/auth.ts`) also point at the chosen port.
 - **Scaffold has local UI primitives that shadow SDK names** — `src/components/ui/Toast.tsx` exports its own `ToastProvider` + `useToast`, and the scaffolded `_app.tsx` wraps the app in the **local** `ToastProvider`. If you import `useToast` from `deepspace`, you'll hit `useToast must be used within ToastProvider` at runtime because the contexts don't match. **Import UI primitives from `../components/ui` (or the equivalent local path), not from `deepspace`**, unless you've verified the scaffold uses the SDK version. The same shadowing can apply to other UI components — always check the scaffolded `_app.tsx` to see which provider is in the tree before picking an import source.
 
 ## Key Rules

@@ -52,23 +52,30 @@ Default palette (dark slate + indigo) — these are the values to change:
 ```
 
 **Steps when scaffolding a new app:**
-1. Pick a palette that fits the app's domain **before** writing features:
-   - Productivity/tasks → warm neutrals (stone/zinc) + a distinctive accent (amber, rose, teal).
-   - Finance/analytics → deep green or teal primary, paper background.
-   - Social/chat → accent-driven (violet, coral, amber), light or dark.
-   - Docs/writing → high-contrast neutrals, paper tones (`#fafaf9` bg, `#18181b` fg).
+1. Pick a palette **before** writing features. Any palette that reasonably fits the app's concept is fair game — cool blues, warm earth tones, paper neutrals with a vivid accent, dark with neon, muted monochrome, high-contrast mid-century, whatever. The only hard rule: don't keep the default dark-blue + indigo look. Beyond that, variety matters more than matching a "productivity = warm neutrals" heuristic — avoid cream/amber, slate/teal, or any single family just because it "feels safe."
 2. Replace the `@theme` block — swap at least: `--color-background`, `--color-foreground`, `--color-primary`, `--color-secondary`, `--color-card`, `--color-accent`, `--color-ring`, and the `--shadow-glow-*` tokens so glows match the new accent. A single token swap is not enough — the UI will still read as "default DeepSpace".
 3. Update the backward-compat aliases at the bottom of the `@theme` block (`--color-surface`, `--color-primary-hover`, `--color-primary-muted`, `--color-primary-border`) — several components still read these.
 4. Update the favicon and `<title>` in `index.html`. The defaults say "DeepSpace".
 5. If the app has a distinct identity, add a simple wordmark or logo to `Navigation.tsx` (plain text in a distinctive font counts — `font-serif`, `tracking-tight`, larger size).
 
-If the user has not specified a palette, **pick one that fits the app's purpose and tell them in one line** what you picked (e.g., "Picked a paper/amber palette to match a task manager"). Do not silently keep the default. Do not ask for hex codes up front.
+If the user has not specified a palette, **pick one and tell them in one line** what you picked (e.g., "Picked a deep teal + cream palette"). Do not silently keep the default. Do not ask for hex codes up front. Do not explain your reasoning unless asked — just ship and move on.
 
 **When to use `DeepSpaceThemeProvider` / `applyDeepSpaceTheme` instead:** these are exported from `deepspace` (the root package — there is no `deepspace/theme` subpath) and drive `--theme-*` CSS variables consumed by cross-app / deployed DeepSpace components (pills, directory panels, mini-apps). They read from `--color-*` by default (`readThemeFromDOM`), so editing the `@theme` block is usually enough and they just follow. Reach for them explicitly only when embedding DeepSpace surfaces on a deployed site or mini-app that needs a different theme from the main app.
 
 **UI dark/light mode:** the SDK reads `data-ui-theme="dark" | "light"` on `<html>` to switch between `UI_TOKENS_DARK` and `UI_TOKENS_LIGHT` (see `applyUIThemeTokens`). Set this attribute if the app supports a light/dark toggle.
 
 ---
+
+## 2a. No Emojis in UI Chrome
+
+**Do not put emojis in page titles, H1s, nav items, buttons, empty states, card headers, or anywhere else the app itself renders text.** Emoji-as-icon (🛒 Shared Grocery, 📊 Pulse, 📅 Calendar) looks amateurish and substitutes for actual branding. It's a tell that the agent skipped design.
+
+Allowed emoji contexts:
+- **User-authored content** — messages, comments, posts. Users type what they type.
+- **Message reactions** — the reaction picker itself (👍 🎉 ❤️ etc. as the selectable set).
+- **The user explicitly asks for emojis** ("add a grocery emoji to the header").
+
+Everywhere else, use an `lucide-react` icon (already a scaffold dep) or a text-only treatment. Good wordmarks are plain text in a distinctive font — `font-serif tracking-tight` or similar — not an emoji next to a heading.
 
 ## 3. UI Primitives — Use the Scaffolded Shadcn/UI Kit, Never Browser Defaults
 
