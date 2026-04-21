@@ -1,53 +1,37 @@
 ---
 name: deepspace
-description: Use when working in a project that depends on the `deepspace` npm package, building real-time collaborative apps on Cloudflare Workers, or when the user mentions DeepSpace SDK
+description: >
+  Use when building real-time collaborative apps with the DeepSpace SDK on
+  Cloudflare Workers, scaffolding a new DeepSpace app, or working in any
+  project that imports from `deepspace` or `deepspace/worker`. Also use when
+  the user mentions DeepSpace, app.space, RecordRoom, or asks to create a
+  collaborative web app with real-time sync, auth, and deployment to
+  Cloudflare Workers — even if they don't name DeepSpace explicitly.
 ---
 
 # DeepSpace SDK
 
-Build real-time collaborative apps on Cloudflare Workers. One npm package, SQLite-backed Durable Objects, RBAC, WebSocket subscriptions, Better Auth.
+Build real-time collaborative apps on Cloudflare Workers. One npm package: SQLite-backed Durable Objects, RBAC, WebSocket subscriptions, Better Auth.
 
-## Setup
+## Build a New App
+
+### Step 1: Scaffold
 
 ```bash
-npm install deepspace          # one package, everything included
-npx deepspace create my-app    # scaffold a new app
-npx deepspace login             # authenticate
-npx deepspace deploy            # deploy to *.app.space
+# Published SDK (when available)
+npx deepspace create <app-name>
+
+# Local SDK (for development — replace path with your local SDK root)
+<local-sdk-path>/packages/create-deepspace/dist/index.js <app-name> --local <local-sdk-path>
 ```
 
-Local dev: `pnpm dev` starts all workers + Vite with HMR.
+This generates: generouted file-based routing, `_app.tsx` providers, `nav.ts`, `worker.ts`, Cloudflare Vite plugin, and a working dev setup.
 
-## Two Imports
+### Step 2: Define Schemas
+
+Create `src/schemas.ts` with typed SQL columns. Every collection needs `name`, `columns`, `ownerField`, and `permissions`.
 
 ```typescript
-// Frontend (React)
-import { RecordProvider, RecordScope, useQuery, useMutations, useAuth } from 'deepspace'
-
-// Worker (Cloudflare Worker)
-import { RecordRoom, verifyJwt, CHANNELS_SCHEMA } from 'deepspace/worker'
-```
-
-## Architecture
-
-Each app has its own **RecordRoom** Durable Object with schemas baked in at deploy time. The app's `worker.ts` exports `AppRecordRoom` which extends `RecordRoom` with the app's schemas. WebSocket connections go directly to the app's DO — no proxy hop.
-
-Global DOs (conversations, directories, workspaces) live in the platform worker.
-
-```
-App Worker (per-app)         Platform Worker (shared)
-├── AppRecordRoom DO         ├── GlobalRecordRoom DO
-├── /ws/:roomId              ├── /ws/:scopeId (conv, dir, workspace)
-├── /api/auth/* → auth-worker├── /api/app-registry
-└── Static assets (SPA)      └── /api/health
-```
-
-## Schemas (Columns Only)
-
-Every collection uses typed SQL columns. No document-mode / fields-based storage.
-
-```typescript
-// src/schemas.ts
 import { USERS_COLUMNS, CHANNELS_SCHEMA, MESSAGES_SCHEMA } from 'deepspace/worker'
 
 const itemsSchema = {
@@ -70,14 +54,117 @@ const itemsSchema = {
 export const schemas = [usersSchema, itemsSchema, CHANNELS_SCHEMA, MESSAGES_SCHEMA]
 ```
 
+### Step 3: Wire Auth and Providers
+
+In `src/pages/_app.tsx`, set up the provider stack:
+
+```tsx
+<DeepSpaceAuthProvider>
+  <RecordProvider allowAnonymous>
+    <RecordScope
+      roomId={SCOPE_ID}
+      schemas={schemas}
+      appId={APP_NAME}
+      sharedScopes={[{ roomId: 'workspace:default', schemas: workspaceSchemas }]}
+    >
+      <App />
+    </RecordScope>
+  </RecordProvider>
+</DeepSpaceAuthProvider>
+```
+
+### Step 4: Auth Wiring Checklist
+
+Every app MUST implement these auth flows — do not skip any:
+
+- [ ] **Sign-in for unauthenticated users**: Render `<AuthOverlay />` when `!isSignedIn`. Gate the app behind auth or show a landing with a Sign In button. Use `useAuth().isSignedIn` (session-based, updates immediately) as the primary check — not `useUser()` alone.
+- [ ] **Sign-out**: Add a sign-out option accessible from the user avatar/menu using `signOut()` from the SDK. Users must always be able to log out.
+- [ ] **Auth state reactivity**: After `AuthOverlay` completes sign-in, `isSignedIn` flips `true` → show loading spinner → user profile loads → app renders. Do not require a page refresh.
+- [ ] **AuthOverlay pattern**: Render without `onClose` and gate with `!isSignedIn` — the overlay auto-hides when signed in (returns `null`). This prevents users from dismissing it and getting stuck.
+
+```tsx
+// Recommended pattern
+const { isSignedIn } = useAuth()
+if (!isSignedIn) return <AuthOverlay />
+```
+
+### Step 5: Pick a Theme
+
+Before building pages on an **initial build**, rewrite the `@theme` block in `src/styles.css` and update `<title>` / favicon in `index.html` so subsequent UI reflects the real brand instead of default dark-blue. If the user didn't specify a palette, pick one that fits the app's domain and tell them in one line. On initial builds, load `references/uiux.md` §2 for the palette picker and token list. On maintenance work against an already-themed app, skip this step.
+
+### Step 6: Build Pages and Features
+
+Pages go in `src/pages/` — generouted scans this directory for file-based routing.
+
+```
+src/pages/home.tsx    → /home
+src/pages/items.tsx   → /items
+src/pages/_app.tsx    → layout wrapper (providers + nav)
+```
+
+Features are reference implementations in `.deepspace/features/` (scaffolded into every app). To add one: read `.deepspace/features/<name>/FEATURE.md`, copy files to specified destinations, wire imports/routes/schemas.
+
+Replace the scaffold home page, wire mutations to `useToast`, and use scaffolded UI primitives from `src/components/ui/` — never browser defaults. Load `references/uiux.md` on initial builds, when adding UI you haven't built in this session yet (confirmations, empty states, skeletons), or when the user says the app "feels generic". Skip it for small tweaks against UI that already exists and already uses the primitives.
+
+Available features (check `.deepspace/features/` in the scaffolded app for the canonical list — names may evolve): `admin-page`, `ai-chat`, `canvas`, `cron`, `docs`, `file-manager`, `integration-test`, `items`, `kanban`, `landing`, `leaderboard`, `messaging`, `presence-test`, `sidebar`, `tasks`, `testing`, `topbar`, `tree`.
+
+### Step 7: Run Locally
+
+```bash
+npx deepspace dev     # starts all workers + Vite with HMR on localhost:5173
+```
+
+### Step 8: Test-Driven Verification (run when code changes)
+
+Tests are the primary way to verify and debug code changes. The scaffolded tests (`smoke.spec.ts`, `api.spec.ts`, `collab.spec.ts`) are **starting points** — extend them for every code change that affects runtime behavior.
+
+**When to run tests**: only after a code change (added/edited files in `src/`, `worker.ts`, or similar). Skip tests for conversation, planning, reading files, or answering questions — don't run them as a ritual.
+
+**Workflow for any code change that touches runtime behavior:**
+
+1. **Customize or extend the relevant test file** to cover what you just built or modified:
+   - **smoke.spec.ts** — update when adding a new page, route, nav item, or top-level UI (landing, gallery, dashboard, settings). Assert the page loads, expected content is visible, no console/page errors.
+   - **api.spec.ts** — update when adding worker routes, integration calls, or endpoints that require auth. Assert status codes, response shape, auth gating, error cases.
+   - **collab.spec.ts** — update when adding multi-user flows (shared records, messaging, permissions, presence, invites, real-time sync). Use `createTestUsers(browser, N)` and assert one user's action is visible/effective for another.
+2. **Run the relevant tests** (`npx playwright test <file>`) with `npx deepspace dev` already running.
+3. **Debug from failures, not from console logs.** If a test fails, read the assertion message, read the failing selector, then fix the code. Do not add `console.log` to diagnose — write a more specific assertion. Do not weaken or delete tests to make them green.
+4. **Re-run after each follow-up change.** When the user asks for a tweak or new feature later, update the tests alongside the code change, then run them. Treat tests as a living contract — but only exercise them when the contract actually changes.
+
+**When to reach for which test:**
+- Single-user UI / CRUD / navigation → extend `smoke.spec.ts`.
+- Worker route, integration call, RBAC on HTTP → extend `api.spec.ts`.
+- Anything where user A's action should affect user B's view → extend `collab.spec.ts`.
+- A bug you're trying to fix → write a failing test that reproduces it first, then fix the code.
+
+Skipping tests after a code change is the #1 source of "I built it but it crashes on page load" handoffs.
+
+### Step 9: Deploy
+
+On an **initial build**, load `references/uiux.md` §5 and run the pre-deploy checklist (home replaced, theme updated, no browser-default primitives, mutations fire toasts). On **follow-up deploys** where those were already verified, skip straight to the commands below.
+
+```bash
+npx deepspace login  # opens browser — the ONE human step in the whole flow
+npx deepspace deploy  # deploys to <app-name>.app.space
+```
+
+## Two Imports
+
+```typescript
+// Frontend (React)
+import { RecordProvider, RecordScope, useQuery, useMutations, useAuth } from 'deepspace'
+
+// Worker (Cloudflare Worker)
+import { RecordRoom, verifyJwt, CHANNELS_SCHEMA } from 'deepspace/worker'
+```
+
 ## Frontend Hooks
 
-### Core (always available)
+### Core
 ```typescript
 const { records } = useQuery<Item>('items', { where: { status: 'published' }, orderBy: 'createdAt' })
 const { create, put, remove } = useMutations<Item>('items')
 const { user } = useUser()          // storage-level: id, name, email, role
-const { isSignedIn } = useAuth()    // auth state
+const { isSignedIn } = useAuth()    // auth state (use this as primary check)
 const { users } = useUsers()        // all room users
 ```
 
@@ -97,41 +184,36 @@ const { communities, createCommunity, joinCommunity } = useCommunities()
 const { posts, createPost } = usePosts()
 ```
 
-## Provider Stack
+### Other hooks and exports
 
-```tsx
-<DeepSpaceAuthProvider>
-  <RecordProvider allowAnonymous>
-    <RecordScope
-      roomId={SCOPE_ID}
-      schemas={schemas}
-      appId={APP_NAME}
-      sharedScopes={[{ roomId: 'workspace:default', schemas: workspaceSchemas }]}
-    >
-      <App />
-    </RecordScope>
-  </RecordProvider>
-</DeepSpaceAuthProvider>
+The hooks shown above (Core, Messaging, Directory) are the data-and-identity primitives most apps use. For other SDK surfaces, read **`references/sdk-reference.md`** — it indexes every export grouped by domain, with usage snippets for the common non-obvious ones. Load it when building a feature that involves:
+
+- **File uploads or image/video handling** → `useR2Files` (includes a local-dev caveat about `APP_IDENTITY_TOKEN` uploads)
+- **Collaborative text editing** (docs, comments, notes) → `useYjsText` / `useYjsField`
+- **Live cursors, typing indicators, "who's online"** → `usePresence`
+- **Canvas / whiteboard features** → `useCanvas`
+- **Video/audio rooms** → `useMediaRoom`
+- **Theme customization** → `DeepSpaceThemeProvider`, `applyUIThemeTokens`
+- **Environment-specific logic** → `isLocalDev()`, `getApiUrl()`
+- **Any export not covered in this file** — `sdk-reference.md` is the canonical index.
+
+For exact type signatures of any export, read `node_modules/deepspace/dist/index.d.ts` (frontend) or `node_modules/deepspace/dist/worker.d.ts` (worker). Do not guess hook names or argument shapes.
+
+## Architecture
+
+Each app has its own **RecordRoom** Durable Object with schemas baked in at deploy time.
+
+```
+App Worker (per-app)         Platform Worker (shared)
+├── AppRecordRoom DO         ├── GlobalRecordRoom DO
+├── /ws/:roomId              ├── /ws/:scopeId (conv, dir, workspace)
+├── /api/auth/* → auth-worker├── /api/app-registry
+└── Static assets (SPA)      └── /api/health
 ```
 
-- `RecordProvider` handles auth context. `allowAnonymous` lets unauthenticated users connect.
-- `RecordScope` opens a WebSocket to one RecordRoom DO. `sharedScopes` connects to additional DOs headlessly.
-- Auth identity change (sign-in, sign-out) automatically disconnects and reconnects all scopes.
+**Critical**: Global scopes (`workspace:*`, `dir:*`, `conv:*`) must proxy WebSocket connections through `PLATFORM_WORKER` service binding to the platform worker's shared DOs. If the worker routes ALL `/ws/:roomId` to local `RECORD_ROOMS`, each app gets its own isolated instance and cross-app data sharing breaks.
 
-## Auth
-
-Better Auth with cookie-based sessions. JWT (ES256, 5min) for WebSocket auth. User profile derived from JWT claims — no separate API call.
-
-```tsx
-// Sign-in via modal (closeable)
-<AuthOverlay onClose={() => setShowModal(false)} />
-
-// Conditional rendering
-<SignedIn>Only signed-in users see this</SignedIn>
-<SignedOut><button onClick={showSignIn}>Sign In</button></SignedOut>
-```
-
-## Worker (worker.ts)
+## Worker
 
 ```typescript
 import { RecordRoom, verifyJwt, createScopedR2Handler } from 'deepspace/worker'
@@ -144,52 +226,195 @@ export class AppRecordRoom extends RecordRoom {
 }
 ```
 
-The worker handles: auth proxy, WebSocket → DO routing, server actions, R2 files, cron, static assets.
-
-## Features
-
-Features are reference implementations in `.deepspace/features/`. Each has a `FEATURE.md` with exact copy instructions and wiring steps.
-
-To add a feature: read `.deepspace/features/<name>/FEATURE.md`, copy the source files to the specified destinations, and wire up imports/routes/schemas as instructed.
-
-Available features: landing-page, sidebar-nav, topbar-nav, layout-sidebar, display-kanban, items-crud, admin-page.
-
 ## RBAC
 
-Permissions are per-role, per-collection. Permission levels:
+Permissions are per-role, per-collection:
 - `true` / `false` — allow/deny all
 - `'own'` — only records where ownerField matches userId
 - `'published'` — owner OR passes visibilityField check
-- `'shared'` — owner OR collaborator OR published
+- `'shared'` — owner OR collaborator OR published (uses `collaboratorsField` + `visibilityField`)
 - `'team'` — owner OR collaborator OR team member
 
-New authenticated users get `member` role by default. Anonymous connections get `anonymous` role.
+New authenticated users get `member` role. Anonymous connections get `anonymous` role.
 
-## Local Dev
+### Data Visibility
 
-```bash
-pnpm dev              # starts auth-worker, api-worker, platform-worker, app worker, Vite
-pnpm test:local       # 25 Playwright tests against real local workers
+When creating records scoped to specific users (e.g., conversations, private data):
+- Set `Visibility: 'private'` — not `'public'`
+- Populate `ParticipantIds` (or the relevant `collaboratorsField`) with all participant user IDs
+- The SDK filters server-side in the DO — `canRead()` checks ownerField, collaboratorsField, and visibilityField before sending data over WebSocket
+- Never rely on client-side filtering alone — data still syncs over WebSocket and is visible in dev tools
+
+## Integrations
+
+Call external APIs (OpenAI, weather, email, GitHub, Slack, Google, etc.) through the api-worker proxy:
+
+```typescript
+import { integration } from 'deepspace'
+const result = await integration.post('openweathermap/geocoding', { q: city })
+// Returns: { success: true, data: {...} } or { success: false, error: "..." }
 ```
 
-All secrets from Doppler: `./scripts/setup-env.sh dev`
+**Do not guess endpoint names.** The format is `<integration-name>/<endpoint-name>` (two segments). Names like `geocode-city` or `weather-forecast` are not real — a wrong name will return a 404 at runtime.
 
-App worker uses `wrangler.dev.toml` for local dev (real values, no `__APP_NAME__` placeholder).
+**For the full list of available integrations and endpoints, read `references/integrations.md`.** It covers LLMs (OpenAI, Anthropic, Gemini), search (Exa, Firecrawl, SerpAPI), media (Freepik, ElevenLabs, CloudConvert), communication (Email, Slack, LiveKit), Google Workspace (Gmail, Drive, Calendar), social (GitHub, LinkedIn, YouTube, TikTok, Instagram), finance (Polymarket, stocks, crypto), sports, NASA, MTA, Wikipedia, and more. Always verify the endpoint exists in that reference before calling it.
 
-## Deploy
+## UI/UX Polish
+
+The scaffold's home page, theme, and UI primitive choices are placeholders — shipping them as-is produces a generic-looking app. Load `references/uiux.md` **on initial builds** (home + theme + first pages) and **whenever reaching for a UI pattern not yet built in this session** (confirmations, empty states, skeletons, etc.) or when the user says the app "feels generic". Skip it for maintenance work against UI that already follows the primitives conventions.
+
+## Testing
+
+Every scaffolded app includes Playwright tests in `tests/` with helpers for auth, error tracking, and multi-user flows. Use these tests to verify your work — don't rely on manual testing or console logs to debug issues.
+
+### Running Tests
 
 ```bash
-npx deepspace login
-npx deepspace deploy
+npx playwright test              # run all tests
+npx playwright test smoke.spec   # run a specific test file
 ```
 
-Deploys to `{app-name}.app.space` via Workers for Platforms. Schemas baked into the worker bundle at build time.
+Dev server must be running (`npx deepspace dev`) before running tests.
+
+### Scaffolded Test Files
+
+- `smoke.spec.ts` — app loads, navigation renders, sign-in button present, page title correct
+- `api.spec.ts` — API endpoints return expected responses, auth required where expected
+- `collab.spec.ts` — multi-user: two users connect, see each other, data syncs between them
+- `tests/feature-tests/tests/<feature-id>.spec.ts` — per-feature merge-gate specs (e.g., `docs.spec.ts` for the docs feature). Auto-discovered and run by the e2e harness when the feature is installed. When you add a custom feature, drop a `<feature-id>.spec.ts` alongside the others with multi-user assertions.
+
+Playwright runs with `retries: 1` locally (2 in CI) to absorb subprocess flakes; real bugs fail all retries. `trace: 'retain-on-failure'` preserves the full trace in `test-results/` for forensics.
+
+### Test Helpers (`tests/helpers/`)
+
+- `auth.ts` — ships with `signUp(page, email)` and `createTestUsers(browser, count)`. **Both are currently broken in local dev** because they POST to `/api/auth/sign-up/email`, which the platform auth worker rejects with 403 ("Public signup disabled"). Do not use them as-is; use the test-accounts flow below instead.
+- `global-setup.ts` — warms up the auth worker with retries before tests run.
+- `errors.ts` — captures console errors and page errors during tests.
+
+### Authenticated tests — use `npx deepspace test-accounts`
+
+Public signup is intentionally disabled. Tests sign in (not sign up) using credentials created via the `deepspace test-accounts` CLI — the scaffold's `tests/helpers/auth.ts` already wires this up.
+
+**If `createTestUsers` throws** saying there aren't enough local accounts, the error message prints exact copy-paste commands with a `Date.now()` millisecond timestamp that keeps them globally unique across developers and machines (the auth worker enforces email uniqueness at the user-table level):
+
+```bash
+npx deepspace login   # if not already
+npx deepspace test-accounts create --email test-1-1776798210521@deepspace.test --password Pass123! --name "Test User 1"
+npx deepspace test-accounts create --email test-2-1776798210521@deepspace.test --password Pass123! --name "Test User 2"
+```
+
+Credentials persist at `~/.deepspace/test-accounts.json` (mode 0600). Emails must end `@deepspace.test`. Max 10 per developer. Run as part of the same session — don't silently skip collab tests or punt with "requires manual QA." Run `npx deepspace test-accounts --help` for the full CLI.
+
+### Writing New Tests
+
+**Single-user flows** (CRUD, navigation, UI state): import `signInAs` and `loadLocalAccounts` from `./helpers/auth` and sign one page in.
+
+**Multi-user flows** (real-time sync, sharing, permissions): use the scaffold's `createTestUsers(browser, N)` helper — it opens N isolated browser contexts, signs each into a distinct local test account, and returns `{ context, page, email, name }[]`.
+
+```typescript
+import { createTestUsers } from './helpers/auth'
+
+test('user A's action appears for user B', async ({ browser }) => {
+  const [userA, userB] = await createTestUsers(browser, 2)
+  try {
+    await userA.page.getByTestId('create-btn').click()
+    await userA.page.getByTestId('title-input').fill('My Item')
+    await userA.page.getByTestId('save-btn').click()
+    await expect(userB.page.getByText('My Item')).toBeVisible()
+  } finally {
+    await userA.context.close()
+    await userB.context.close()
+  }
+})
+```
+
+### Test data cleanup — tests must not pollute the dev DB
+
+Tests run against the same local Durable Object the dev server uses, so any records a test creates will still be visible in `npx deepspace dev` afterwards. That's a problem once the app has real data.
+
+**Convention every test must follow:**
+
+1. **Prefix every record you create with `__test-${Date.now()}__`** in its human-visible field (title, name, question, etc.) so test data is always recognizable.
+2. **Clean up in `afterEach` / `afterAll`**: iterate the mutations you made in the test and delete the records you created. Keep a list of created `recordId`s inside the test, then remove them.
+
+```typescript
+test('user A posts a message user B sees', async ({ browser }) => {
+  const [userA, userB] = await createTestUsers(browser, 2)
+  const created: string[] = []
+  try {
+    const title = `__test-${Date.now()}__ Hello`
+    // ... create, grab the resulting recordId, push to `created` ...
+    // ... assertions ...
+  } finally {
+    // Delete in reverse order, best-effort
+    for (const id of created.reverse()) {
+      try { await userA.page.evaluate(
+        async (recordId) => {
+          /* call your delete endpoint or mutate hook */
+        }, id,
+      ) } catch { /* swallow */ }
+    }
+    await userA.context.close()
+    await userB.context.close()
+  }
+})
+```
+
+**Do not** add a blanket "wipe the DB between tests" step — that would destroy real data the developer is working with. The cleanup must be scoped to records the test itself created. If you see a test using `DELETE FROM` or dropping collections, replace it.
+
+### Route coverage — every route must be tested
+
+A smoke test that only loads `/` (or the home page) is not enough. If a route is reachable in the app — for example, static (`/polls`) or dynamic (`/polls/:id`) — there must be a test that:
+
+1. Navigates to it (for dynamic routes: create a record first, grab its id, navigate).
+2. Waits for the page's real content to appear (not just "no crash" — assert a specific element with real data, e.g., `expect(page.getByTestId('poll-question')).toContainText(questionText)`).
+3. Fails loudly if the page renders an empty/not-found state when it shouldn't.
+
+Passing a smoke test where the detail page silently shows "Poll not found" is the failure mode that shipped the group-poll regression. A "page loads without JS errors" assertion is insufficient — assert that the data that should be there **is** there.
+
+### Proactive Test Authoring
+
+Write and update tests **as you build**, not after. Every new page, feature, or user-visible change should trigger a corresponding test update in the same session — before saying "done":
+
+- **New page / route / nav item** → extend `smoke.spec.ts`. Add a test that navigates to the page, asserts the expected headline/components are visible, and the page has no errors.
+- **New CRUD feature** (items, posts, whatever) → extend `smoke.spec.ts` with a create/read/edit/delete happy path for a signed-in user.
+- **New worker route or integration call** → extend `api.spec.ts`. Assert success responses, auth-required failures, and error shapes.
+- **New multi-user behavior** (sharing, invites, messages, presence, permissions, shared scopes) → extend `collab.spec.ts`. Create two users, act in one, assert in the other.
+- **RBAC changes or permission tweaks** → add tests in `collab.spec.ts` with users of different roles, asserting what each can and cannot see/do.
+- **Bug fix** → write the failing test first (reproducing the bug), then fix the code until it passes. Leave the test in the suite.
+
+When the user asks for a change in a follow-up message, update the tests in the same turn — don't let them drift. The test suite is a living contract.
+
+### Self-Diagnosis with Tests
+
+When something isn't working, do **not** start with console logs. Start with:
+1. Write (or tighten) a test that expresses the expected behavior.
+2. Run it. Read the failure message and the failing selector/assertion.
+3. Fix the code until the test passes.
+4. Leave the test in place — it now guards against regression.
+
+Console logs are a last resort, not a first step. A failing test tells you more than a log ever will: what was expected, what was observed, where in the flow it diverged. If a test is flaky or passes locally but fails in CI, investigate the flake — do not mark it `.skip` or delete it.
+
+## Gotchas
+
+These are concrete issues discovered in real dev sessions. Read before building.
+
+- **Page files MUST go in `src/pages/`** — generouted only scans this directory. Putting pages in `src/features/<name>/` or elsewhere results in 404s even if nav links exist.
+- **`useAuth().isSignedIn` for auth gating, not `useUser()`** — `isSignedIn` is session-based and updates immediately after sign-in. `useUser()` loads async and causes a flash of "not signed in" state.
+- **Safari + localhost cookies** — `__Secure-` cookies require HTTPS. Safari enforces this; Chrome doesn't on localhost. Auth will appear broken on Safari in local dev. Works fine once deployed.
+- **Service bindings unavailable in local dev** — `c.env.API_WORKER.fetch()` doesn't exist locally. Use `API_WORKER_URL` env var as fallback: `env.API_WORKER?.fetch(req) ?? fetch(env.API_WORKER_URL + path)`.
+- **Integration response format** — api-worker returns `{ success: true, data: [...] }` where `data` may be a flat array. Don't look for `result.data.forecast` or `result.data.list` — check `Array.isArray(result.data)`.
+- **Cross-app workspace isolation** — Each app worker has its own DO namespace. `workspace:default` in app A is a different DO instance than `workspace:default` in app B. For shared data, route `workspace:*` WebSocket connections through `PLATFORM_WORKER`.
+- **`createChannel()` defaults to `Visibility: 'public'`** — This means all users see all conversations. Override with `Visibility: 'private'` and set `ParticipantIds` for user-scoped data.
+- **Schemas are columns only** — no `fields` property, no document-mode storage.
+- **JWT provides user profile** — no separate `/api/users/me` call needed.
+- **All tests use real services** — never mock internal hooks.
+- **Port 5173 may be held by a parallel session** — if `npx deepspace dev` or `npx playwright test` fails because `5173` is in use, **do not kill** the process holding it (another agent session may be working). Start this session's dev server on a different port via `VITE_PORT=5174 npx deepspace dev` (or `5175`, `5176`, etc.) and pass the matching `baseURL` to Playwright (`npx playwright test --config tests/playwright.config.ts` with `PLAYWRIGHT_BASE_URL=http://localhost:5174`). Verify the test helper URLs (e.g., `AUTH_BASE` in `tests/helpers/auth.ts`) also point at the chosen port.
+- **Scaffold has local UI primitives that shadow SDK names** — `src/components/ui/Toast.tsx` exports its own `ToastProvider` + `useToast`, and the scaffolded `_app.tsx` wraps the app in the **local** `ToastProvider`. If you import `useToast` from `deepspace`, you'll hit `useToast must be used within ToastProvider` at runtime because the contexts don't match. **Import UI primitives from `../components/ui` (or the equivalent local path), not from `deepspace`**, unless you've verified the scaffold uses the SDK version. The same shadowing can apply to other UI components — always check the scaffolded `_app.tsx` to see which provider is in the tree before picking an import source.
 
 ## Key Rules
 
-- **Schemas are columns only** — no `fields` property, no document-mode
-- **No user scope DOs** — user-scoped data lives in app DOs
-- **No schema runtime loading** — schemas baked in at deploy time
-- **No mux/gateway** — direct WebSocket per scope
-- **JWT provides user profile** — no separate `/api/users/me` call
-- **All tests use real services** — never mock internal hooks
+- Schemas baked in at deploy time — no runtime schema loading
+- Direct WebSocket per scope — no mux/gateway
+- No user-scope DOs — user-scoped data lives in app DOs with RBAC filtering
+- `pnpm dev` or `npx deepspace dev` for local dev — never run `wrangler dev` + `vite dev` separately
