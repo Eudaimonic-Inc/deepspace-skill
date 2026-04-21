@@ -90,7 +90,7 @@ if (!isSignedIn) return <AuthOverlay />
 
 ### Step 5: Pick a Theme
 
-Before building pages, rewrite the `@theme` block in `src/styles.css` and update `<title>` / favicon in `index.html` so subsequent UI reflects the real brand instead of default dark-blue. If the user didn't specify a palette, pick one that fits the app's domain and tell them in one line. See `references/uiux.md` §2 for palette guidance and tokens to override.
+Before building pages on an **initial build**, rewrite the `@theme` block in `src/styles.css` and update `<title>` / favicon in `index.html` so subsequent UI reflects the real brand instead of default dark-blue. If the user didn't specify a palette, pick one that fits the app's domain and tell them in one line. On initial builds, load `references/uiux.md` §2 for the palette picker and token list. On maintenance work against an already-themed app, skip this step.
 
 ### Step 6: Build Pages and Features
 
@@ -104,7 +104,7 @@ src/pages/_app.tsx    → layout wrapper (providers + nav)
 
 Features are reference implementations in `.deepspace/features/` (scaffolded into every app). To add one: read `.deepspace/features/<name>/FEATURE.md`, copy files to specified destinations, wire imports/routes/schemas.
 
-Replace the scaffold home page, wire mutations to `useToast`, and use scaffolded UI primitives from `src/components/ui/` — never browser defaults. Load `references/uiux.md` when building the first page or when the app "feels generic".
+Replace the scaffold home page, wire mutations to `useToast`, and use scaffolded UI primitives from `src/components/ui/` — never browser defaults. Load `references/uiux.md` on initial builds, when adding UI you haven't built in this session yet (confirmations, empty states, skeletons), or when the user says the app "feels generic". Skip it for small tweaks against UI that already exists and already uses the primitives.
 
 Available features (check `.deepspace/features/` in the scaffolded app for the canonical list — names may evolve): `admin-page`, `ai-chat`, `canvas`, `cron`, `docs`, `file-manager`, `integration-test`, `items`, `kanban`, `landing`, `leaderboard`, `messaging`, `presence-test`, `sidebar`, `tasks`, `testing`, `topbar`, `tree`.
 
@@ -140,7 +140,7 @@ Skipping tests after a code change is the #1 source of "I built it but it crashe
 
 ### Step 9: Deploy
 
-Before running deploy, verify the pre-deploy checklist in `references/uiux.md` §5 (home replaced, theme updated, no browser-default primitives, mutations fire toasts). Then:
+On an **initial build**, load `references/uiux.md` §5 and run the pre-deploy checklist (home replaced, theme updated, no browser-default primitives, mutations fire toasts). On **follow-up deploys** where those were already verified, skip straight to the commands below.
 
 ```bash
 npx deepspace login  # opens browser — the ONE human step in the whole flow
@@ -261,7 +261,7 @@ const result = await integration.post('openweathermap/geocoding', { q: city })
 
 ## UI/UX Polish
 
-The scaffold's home page, theme, and UI primitive choices are placeholders — shipping them as-is produces a generic-looking app. **Load `references/uiux.md`** for the full checklist (home page requirements, palette picker, primitives-vs-browser-defaults table, interaction polish, smoke-test assertions) whenever building the home page, customizing theme, wiring mutations to feedback, or when the user says the app "feels generic".
+The scaffold's home page, theme, and UI primitive choices are placeholders — shipping them as-is produces a generic-looking app. Load `references/uiux.md` **on initial builds** (home + theme + first pages) and **whenever reaching for a UI pattern not yet built in this session** (confirmations, empty states, skeletons, etc.) or when the user says the app "feels generic". Skip it for maintenance work against UI that already follows the primitives conventions.
 
 ## Testing
 
