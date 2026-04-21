@@ -165,6 +165,12 @@ function Gallery() {
 - `useInbox()` — cross-app inbox entries.
 - `usePlatformWS<S>()` — platform WebSocket subscription.
 
+**OAuth management endpoints** (authenticated, app-worker-proxied — call via `fetch` with the session token):
+- `GET /api/integrations/status` — per-scope connection flags for all OAuth providers (currently only `google`). Response shape and per-scope fields documented in `references/integrations.md` → OAuth section.
+- `DELETE /api/integrations/oauth/:provider/disconnect` — revoke and clear the current user's stored tokens.
+
+For the `requiresOAuth` response shape and client retry pattern, see `references/integrations.md` → OAuth section.
+
 ### Theming
 
 - `DeepSpaceThemeProvider` — wraps the tree with theme tokens.
@@ -228,6 +234,7 @@ Omit the override to keep the legacy behavior (load the stored blob as-is).
 - `USERS_COLUMNS` — standard users columns.
 - `CHANNELS_SCHEMA` — channels collection.
 - `MESSAGES_SCHEMA` — messages collection.
+- `WORKSPACE_SCHEMAS` — shared-scope collections (email handles, etc.) — pass as `schemas` to a `workspace:default` shared scope to let apps read cross-app user identity (e.g., a user's claimed `@app.space` email handle). Handles are managed by the mail app; other apps query via `useQuery('email_handles', { where: { UserId: user?.id } })` to resolve a user's address for outbound email.
 - Others for reactions, channel_members, read_receipts, posts, communities, conversations, etc. — check `deepspace/worker` types for the full list.
 
 ---

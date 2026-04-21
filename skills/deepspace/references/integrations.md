@@ -341,4 +341,50 @@ All endpoints return:
 
 ## OAuth
 
-Currently only `google` requires OAuth. Users connect once; tokens are managed by the platform. If a Google endpoint returns `{ success: false, error: 'not_connected' }`, prompt the user to connect their Google account.
+Currently only `google` requires OAuth. Users connect once; tokens are stored and auto-refreshed by the platform. Users can grant scopes incrementally (Gmail first, then Calendar, etc.) — the platform unions new scopes with previously granted ones so badges stay accurate.
+
+### Error shape when OAuth is needed
+
+When a Google endpoint is called without stored tokens, without a required scope, or with a token that has been revoked/expired, the handler returns:
+
+```typescript
+{
+  success: false,
+  requiresOAuth: true,
+  provider: 'google',
+  scopes: string[],   // scopes needed for this call
+  authUrl: string     // redirect the user here to grant consent
+}
+```
+
+Check `result.requiresOAuth` — **do not** grep for the legacy `error: 'not_connected'` string; that shape no longer applies. The platform produces this response for three distinct failures (no tokens, insufficient scope 403, revoked/invalid 401), so one check handles all of them.
+
+Client pattern:
+
+```typescript
+const result = await integration.post('google/gmail-send', { to, subject, content })
+if (result.requiresOAuth) {
+  window.open(result.authUrl, 'google-auth', 'width=500,height=600')
+  // After the user completes consent, retry the call
+}
+```
+
+### Connection status
+
+`GET /api/integrations/status` (authenticated) returns per-scope flags so UIs can show accurate badges:
+
+```typescript
+{
+  google: {
+    connected: boolean,
+    gmailSend: boolean, gmailRead: boolean, gmail: boolean,
+    calendar: boolean, drive: boolean, contacts: boolean
+  }
+}
+```
+
+Broader scopes imply narrower ones — e.g., a token with `gmail.modify` reports `gmailSend` and `gmailRead` as `true` automatically.
+
+### Disconnect
+
+`DELETE /api/integrations/oauth/google/disconnect` (authenticated) revokes and clears the user's stored Google tokens.
