@@ -441,26 +441,21 @@ When a Google endpoint is called without stored tokens, without a required scope
 
 The platform produces this response for three distinct failures (no tokens, insufficient scope 403, revoked/invalid 401), so one check handles all of them. **Always check `result.data?.requiresOAuth`, never `result.requiresOAuth` or `result.success === false`** — the SDK forwards the api-worker's `data` field as-is, so the OAuth fields are nested one level down. (Do not grep for the legacy `error: 'not_connected'` string either; that shape no longer applies.)
 
-Client pattern:
+Client pattern — always unwrap with `data ?? result` so the same code handles the OAuth-recovery payload (nested) and any past or future server-side flattening (top level):
 
 ```typescript
 const result = await integration.post('google/gmail-send', { to, subject, content })
-const oauth = result.data as { requiresOAuth?: boolean; authUrl?: string } | undefined
-if (oauth?.requiresOAuth && oauth.authUrl) {
-  window.open(oauth.authUrl, 'google-auth', 'width=500,height=600')
+if (!result.success) return                       // network/proxy error
+const payload = (result.data ?? result) as Record<string, unknown>
+if (payload?.requiresOAuth && typeof payload.authUrl === 'string') {
+  window.open(payload.authUrl, 'google-auth', 'width=500,height=600')
   // After the user completes consent, retry the call.
+  return
 }
+// Otherwise `payload` is the upstream Google response (events, message, etc.)
 ```
 
-Type the response so this stays honest:
-
-```typescript
-type GoogleResult<T> = {
-  success: boolean
-  data?: T | { requiresOAuth: true; provider: 'google'; scopes: string[]; authUrl: string }
-  error?: string
-}
-```
+This unwrap pattern is what existing production apps in this repo use for every google/* call — apply it consistently rather than reading `result.requiresOAuth` directly. The same pattern works for the upstream data too: e.g. for `calendar-list-events`, after the requiresOAuth check, `payload.items` is the events array.
 
 ### Connection status
 
