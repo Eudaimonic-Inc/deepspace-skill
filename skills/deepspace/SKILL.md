@@ -134,7 +134,7 @@ Rules either way:
 
 ### Step 5: Pick a Theme
 
-Before building pages on an **initial build**, rewrite the `@theme` block in `src/styles.css` and update `<title>` / favicon in `index.html` so subsequent UI reflects the real brand instead of default dark-blue. If the user didn't specify a palette, pick one that fits the app's domain and tell them in one line. On initial builds, load `references/uiux.md` §2 for the palette picker and token list. On maintenance work against an already-themed app, skip this step.
+Before building pages on an **initial build**, rewrite the `@theme` block in `src/styles.css` and update `<title>` / favicon in `index.html` so subsequent UI reflects the real brand instead of default dark-blue. If the user didn't specify a palette, pick one that fits the app's domain and tell them in one line. Load `references/uiux.md` §2 for the palette picker and token list (see **UI/UX Polish** below for the full trigger list). On maintenance work against an already-themed app, skip this step.
 
 ### Step 6: Build Pages and Features
 
@@ -157,7 +157,7 @@ Features are reference implementations in `.deepspace/features/` (scaffolded int
 
 2. Re-run `npx deepspace dev` if new DO classes or worker imports were added.
 
-Replace the scaffold home page, wire mutations to `useToast`, and use scaffolded UI primitives from `src/components/ui/` — never browser defaults. Load `references/uiux.md` on initial builds, when adding UI you haven't built in this session yet (confirmations, empty states, skeletons), or when the user says the app "feels generic". Skip it for small tweaks against UI that already exists and already uses the primitives.
+Replace the scaffold home page, wire mutations to `useToast`, and use scaffolded UI primitives from `src/components/ui/` — never browser defaults. See the **UI/UX Polish** section below for the full list of triggers to load `references/uiux.md` (initial builds, new UI patterns, or the app "feels generic"). 
 
 Available features (check `.deepspace/features/` in the scaffolded app for the canonical list — names may evolve): `admin-page`, `ai-chat`, `canvas`, `cron`, `docs`, `file-manager`, `integration-test`, `items`, `kanban`, `landing`, `leaderboard`, `messaging`, `presence-test`, `sidebar`, `tasks`, `testing`, `topbar`, `tree`.
 
@@ -195,7 +195,7 @@ For deeper surface — `tests/helpers/` API, `npx deepspace test-accounts` setup
 
 ### Step 9: Deploy
 
-On an **initial build**, load `references/uiux.md` §5 and run the pre-deploy checklist (home replaced, theme updated, no browser-default primitives, mutations fire toasts). On **follow-up deploys** where those were already verified, skip straight to the commands below.
+On an **initial build**, load `references/uiux.md` §5 and run the pre-deploy checklist (home replaced, theme updated, no browser-default primitives, mutations fire toasts — see **UI/UX Polish** below for the canonical trigger list). On **follow-up deploys** where those were already verified, skip straight to the commands below.
 
 ```bash
 npx deepspace login  # opens browser — the ONE human step in the whole flow
@@ -346,7 +346,17 @@ The scaffold ships three worker-side extension points in `worker.ts` beyond hook
 
 ## UI/UX Polish
 
-The scaffold's home page, theme, and UI primitive choices are placeholders — shipping them as-is produces a generic-looking app. Load `references/uiux.md` **on initial builds** (home + theme + first pages) and **whenever reaching for a UI pattern not yet built in this session** (confirmations, empty states, skeletons, etc.) or when the user says the app "feels generic". Skip it for maintenance work against UI that already follows the primitives conventions.
+The scaffold's home page, theme, and UI primitive choices are placeholders — shipping them as-is produces a generic-looking app. This section is the canonical list of when to load `references/uiux.md`; the Step 5 and Step 9 pointers above reference back here.
+
+**Load `references/uiux.md` when any of these apply:**
+- **Initial build — theme (§2).** Before writing features, retheme the `@theme` block in `src/styles.css` and update `<title>` / favicon.
+- **Initial build — home page and first pages.** Replace the scaffold home, pick UI primitives, wire mutations to `useToast`.
+- **Initial build — pre-deploy checklist (§5).** Home replaced, theme updated, no browser-default primitives, mutations fire toasts.
+- **Reaching for a UI pattern not yet built in this session** — confirmations, empty states, skeletons, dialogs, dropdowns, tooltips, etc. (§3 is the primitives table.)
+- **About to write `<select>`, `window.confirm`, `window.alert`, or `window.prompt`** — stop and read §3 first; the scaffold ships a shadcn/ui primitive for every one of those.
+- **The user says the app "feels generic"**, "boring", "default", "plain", or "needs polish".
+
+Skip it for maintenance work against UI that already follows the primitives conventions and doesn't need a new pattern.
 
 ## Testing
 
@@ -375,7 +385,7 @@ These are concrete issues discovered in real dev sessions. Read before building.
 - **JWT provides user profile** — no separate `/api/users/me` call needed.
 - **All tests use real services** — never mock internal hooks.
 - **Port 5173 may be held by a parallel session** — Playwright's scaffolded config has `reuseExistingServer: true`, so a parallel session's Vite on 5173 will be picked up and your tests will run against **that** session's app, not yours. **Do not kill** the other session's process. If you need your own dev server, start it on a different port (`VITE_PORT=5174 npx deepspace dev`) **and** edit `tests/playwright.config.ts` so `webServer.port` and `use.baseURL` both point at 5174 (5175, 5176, …) before running tests.
-- **Scaffold has local UI primitives that shadow SDK names** — `src/components/ui/Toast.tsx` exports its own `ToastProvider` + `useToast`, and the scaffolded `_app.tsx` wraps the app in the **local** `ToastProvider`. If you import `useToast` from `deepspace`, you'll hit `useToast must be used within ToastProvider` at runtime because the contexts don't match. **Import UI primitives from `../components/ui` (or the equivalent local path), not from `deepspace`**, unless you've verified the scaffold uses the SDK version. The same shadowing can apply to other UI components — always check the scaffolded `_app.tsx` to see which provider is in the tree before picking an import source.
+- **Scaffold's local UI primitives shadow the SDK** — `_app.tsx` wraps the tree in `ToastProvider` from `src/components/ui/`, not from `deepspace`. Importing `useToast` (or any primitive the scaffold has locally) from `deepspace` throws `useToast must be used within ToastProvider` at runtime because the React contexts don't match. **Import UI primitives from `../components/ui`, not from `deepspace`**; check `_app.tsx` if unsure. Full explanation (React context module-instance identity) lives in `references/uiux.md` § "Critical import rule."
 
 ## Key Rules
 
