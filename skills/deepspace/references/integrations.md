@@ -79,7 +79,7 @@ Real Google round-trips remain **deploy-and-manual-test only** — note that exp
 Full endpoint specs — input schemas, descriptions, output schemas — live in YAML:
 
 - Index: [`integrations.yaml`](./integrations.yaml) — all 215 endpoints grouped by integration, with one-line descriptions.
-- Per-integration specs: [`integrations/<name>.yaml`](./integrations/) — one file per integration (38 total), with full input/output schemas.
+- Per-integration specs: [`integrations/<name>.yaml`](./integrations/) — one file per integration (31 total), with full input/output schemas.
 
 Call pattern is always POST: `integration.post('<integration>/<endpoint>', body)`.
 
