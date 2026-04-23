@@ -95,6 +95,10 @@ tools:
                 total_tokens:
                   type: number
               additionalProperties: true
+            service_tier:
+              type: string
+            system_fingerprint:
+              type: string
           additionalProperties: true
         error:
           type: string
