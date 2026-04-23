@@ -38,65 +38,64 @@ tools:
         success:
           type: boolean
         data:
-          type: object
-          properties:
-            apod:
-              anyOf:
-                - type: object
-                  properties:
-                    copyright:
-                      type: string
-                    date:
-                      type: string
-                    explanation:
-                      type: string
-                    hdurl:
-                      type: string
-                    media_type:
-                      type: string
-                    title:
-                      type: string
-                    url:
-                      type: string
-                    thumbnail_url:
-                      type: string
-                  required:
-                    - date
-                    - explanation
-                    - media_type
-                    - title
-                    - url
-                  additionalProperties: false
-                - type: array
-                  items:
-                    type: object
-                    properties:
-                      copyright:
-                        type: string
-                      date:
-                        type: string
-                      explanation:
-                        type: string
-                      hdurl:
-                        type: string
-                      media_type:
-                        type: string
-                      title:
-                        type: string
-                      url:
-                        type: string
-                      thumbnail_url:
-                        type: string
-                    required:
-                      - date
-                      - explanation
-                      - media_type
-                      - title
-                      - url
-                    additionalProperties: false
-          required:
-            - apod
-          additionalProperties: false
+          description: Raw NASA APOD response. Object when date given; array when date-range/count given.
+          anyOf:
+            - type: object
+              properties:
+                copyright:
+                  type: string
+                date:
+                  type: string
+                explanation:
+                  type: string
+                hdurl:
+                  type: string
+                media_type:
+                  type: string
+                service_version:
+                  type: string
+                title:
+                  type: string
+                url:
+                  type: string
+                thumbnail_url:
+                  type: string
+              required:
+                - date
+                - explanation
+                - media_type
+                - title
+                - url
+              additionalProperties: true
+            - type: array
+              items:
+                type: object
+                properties:
+                  copyright:
+                    type: string
+                  date:
+                    type: string
+                  explanation:
+                    type: string
+                  hdurl:
+                    type: string
+                  media_type:
+                    type: string
+                  service_version:
+                    type: string
+                  title:
+                    type: string
+                  url:
+                    type: string
+                  thumbnail_url:
+                    type: string
+                required:
+                  - date
+                  - explanation
+                  - media_type
+                  - title
+                  - url
+                additionalProperties: true
         error:
           type: string
       required:
@@ -120,17 +119,44 @@ tools:
         success:
           type: boolean
         data:
-          type: object
-          properties:
-            cme:
-              type: array
-              items:
-                type: object
-                properties: {}
-                additionalProperties: true
-          required:
-            - cme
-          additionalProperties: false
+          type: array
+          description: Raw NASA DONKI /CME response (array of CME events, verified via live api.nasa.gov)
+          items:
+            type: object
+            properties:
+              activityID:
+                type: string
+              catalog:
+                type: string
+              startTime:
+                type: string
+              instruments:
+                type: array
+              sourceLocation:
+                type: string
+              activeRegionNum:
+                type:
+                  - number
+                  - "null"
+              note:
+                type: string
+              submissionTime:
+                type: string
+              versionId:
+                type: number
+              link:
+                type: string
+              cmeAnalyses:
+                type: array
+              linkedEvents:
+                type:
+                  - array
+                  - "null"
+              sentNotifications:
+                type:
+                  - array
+                  - "null"
+            additionalProperties: true
         error:
           type: string
       required:
@@ -154,17 +180,48 @@ tools:
         success:
           type: boolean
         data:
-          type: object
-          properties:
-            flr:
-              type: array
-              items:
-                type: object
-                properties: {}
-                additionalProperties: true
-          required:
-            - flr
-          additionalProperties: false
+          type: array
+          description: Raw NASA DONKI /FLR response (array of solar flare events, verified via live api.nasa.gov)
+          items:
+            type: object
+            properties:
+              flrID:
+                type: string
+              catalog:
+                type: string
+              instruments:
+                type: array
+              beginTime:
+                type: string
+              peakTime:
+                type: string
+              endTime:
+                type: string
+              classType:
+                type: string
+              sourceLocation:
+                type: string
+              activeRegionNum:
+                type:
+                  - number
+                  - "null"
+              note:
+                type: string
+              submissionTime:
+                type: string
+              versionId:
+                type: number
+              link:
+                type: string
+              linkedEvents:
+                type:
+                  - array
+                  - "null"
+              sentNotifications:
+                type:
+                  - array
+                  - "null"
+            additionalProperties: true
         error:
           type: string
       required:
@@ -188,17 +245,28 @@ tools:
         success:
           type: boolean
         data:
-          type: object
-          properties:
-            gst:
-              type: array
-              items:
-                type: object
-                properties: {}
-                additionalProperties: true
-          required:
-            - gst
-          additionalProperties: false
+          type: array
+          description: Raw NASA DONKI /GST response (array of geomagnetic storm events, verified via live api.nasa.gov)
+          items:
+            type: object
+            properties:
+              gstID:
+                type: string
+              startTime:
+                type: string
+              allKpIndex:
+                type: array
+              link:
+                type: string
+              linkedEvents:
+                type: array
+              submissionTime:
+                type: string
+              versionId:
+                type: number
+              sentNotifications:
+                type: array
+            additionalProperties: true
         error:
           type: string
       required:
@@ -225,7 +293,18 @@ tools:
           type: boolean
         data:
           type: object
-          description: Raw NASA NeoWs /browse response (near_earth_objects, page, links, etc.)
+          description: Raw NASA NeoWs /browse response (verified via live api.nasa.gov)
+          properties:
+            links:
+              type: object
+            page:
+              type: object
+              description: "{ size, total_elements, total_pages, number }"
+            near_earth_objects:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
           additionalProperties: true
         error:
           type: string
@@ -252,24 +331,22 @@ tools:
           type: boolean
         data:
           type: object
+          description: Raw NASA NeoWs /feed response (verified via live api.nasa.gov)
           properties:
-            neos:
+            links:
               type: object
-              properties:
-                element_count:
-                  type: number
-                near_earth_objects:
+              description: "{ next, previous, self } pagination URLs"
+            element_count:
+              type: number
+            near_earth_objects:
+              type: object
+              description: Object keyed by date (YYYY-MM-DD) → array of NEO objects
+              additionalProperties:
+                type: array
+                items:
                   type: object
-                  additionalProperties:
-                    type: array
-                    items:
-                      type: object
-                      properties: {}
-                      additionalProperties: true
-              additionalProperties: true
-          required:
-            - neos
-          additionalProperties: false
+                  additionalProperties: true
+          additionalProperties: true
         error:
           type: string
       required:
@@ -293,7 +370,33 @@ tools:
           type: boolean
         data:
           type: object
-          description: Raw NASA NeoWs /neo/:id response (near-earth object details)
+          description: Raw NASA NeoWs /neo/:id response (verified via live api.nasa.gov)
+          properties:
+            links:
+              type: object
+            id:
+              type: string
+            neo_reference_id:
+              type: string
+            name:
+              type: string
+            designation:
+              type: string
+            nasa_jpl_url:
+              type: string
+            absolute_magnitude_h:
+              type: number
+            estimated_diameter:
+              type: object
+              description: "{ kilometers, meters, miles, feet } each with min/max estimates"
+            is_potentially_hazardous_asteroid:
+              type: boolean
+            close_approach_data:
+              type: array
+            orbital_data:
+              type: object
+            is_sentry_object:
+              type: boolean
           additionalProperties: true
         error:
           type: string

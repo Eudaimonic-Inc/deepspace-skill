@@ -35,9 +35,34 @@ tools:
           properties:
             videos:
               type: array
+              description: Trending videos from YouTube v3 /videos?chart=mostPopular with snippet + statistics (verified via live API)
               items:
                 type: object
-                description: YouTube video item with added `links`, `embedHtml`, `markdownLink`, and optional `formatted` fields
+                properties:
+                  kind:
+                    type: string
+                  etag:
+                    type: string
+                  id:
+                    type: string
+                  snippet:
+                    type: object
+                    description: "{ publishedAt, channelId, title, description, thumbnails, channelTitle, tags, categoryId, liveBroadcastContent, defaultLanguage, localized, defaultAudioLanguage }"
+                  statistics:
+                    type: object
+                    description: "{ viewCount, likeCount, favoriteCount, commentCount }"
+                  links:
+                    type: object
+                    description: "Added by SDK: { watch, embed, thumbnail }"
+                  embedHtml:
+                    type: string
+                    description: Added by SDK
+                  markdownLink:
+                    type: string
+                    description: Added by SDK
+                  formatted:
+                    type: object
+                    description: "Added by SDK when stats/contentDetails present: { views, duration }"
                 additionalProperties: true
             totalResults:
               type: number
@@ -71,9 +96,37 @@ tools:
           properties:
             videos:
               type: array
+              description: Detailed video items from YouTube v3 /videos with snippet, statistics, contentDetails (verified via live API)
               items:
                 type: object
-                description: YouTube video item with added `links`, `embedHtml`, `markdownLink`, and optional `formatted` fields
+                properties:
+                  kind:
+                    type: string
+                  etag:
+                    type: string
+                  id:
+                    type: string
+                  snippet:
+                    type: object
+                    description: "{ publishedAt, channelId, title, description, thumbnails, channelTitle, tags, categoryId, liveBroadcastContent, defaultLanguage, localized, defaultAudioLanguage }"
+                  statistics:
+                    type: object
+                    description: "{ viewCount, likeCount, favoriteCount, commentCount }"
+                  contentDetails:
+                    type: object
+                    description: "{ duration, dimension, definition, caption, licensedContent, contentRating, projection }"
+                  links:
+                    type: object
+                    description: "Added by SDK: { watch, embed, thumbnail }"
+                  embedHtml:
+                    type: string
+                    description: Added by SDK
+                  markdownLink:
+                    type: string
+                    description: Added by SDK
+                  formatted:
+                    type: object
+                    description: "Added by SDK when stats/contentDetails present: { views, duration }"
                 additionalProperties: true
           required:
             - videos
@@ -117,9 +170,32 @@ tools:
           properties:
             videos:
               type: array
+              description: Search result items from YouTube v3 /search with SDK-added links/embedHtml/markdownLink (verified via live API)
               items:
                 type: object
-                description: YouTube search result with added `links`, `embedHtml`, `markdownLink`, and optional `formatted` fields
+                properties:
+                  kind:
+                    type: string
+                  etag:
+                    type: string
+                  id:
+                    type: object
+                    description: "Search results return { kind, videoId } object"
+                  snippet:
+                    type: object
+                    description: "{ publishedAt, channelId, title, description, thumbnails, channelTitle, liveBroadcastContent, publishTime }"
+                  links:
+                    type: object
+                    description: "Added by SDK: { watch, embed, thumbnail }"
+                  embedHtml:
+                    type: string
+                    description: Added by SDK
+                  markdownLink:
+                    type: string
+                    description: Added by SDK
+                  formatted:
+                    type: object
+                    description: "Added by SDK when stats/contentDetails present (rare for search): { views, duration }"
                 additionalProperties: true
             totalResults:
               type: number
