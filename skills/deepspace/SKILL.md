@@ -191,7 +191,7 @@ Tests are the primary way to verify and debug code changes. The scaffolded tests
 
 Skipping tests after a code change is the #1 source of "I built it but it crashes on page load" handoffs.
 
-For deeper surface — `tests/helpers/` API, `npx deepspace test-accounts` setup, record-cleanup convention, route-coverage requirements, multi-user patterns, self-diagnosis — load `references/testing.md`. Trigger it on: writing a new test, `createTestUsers` erroring about missing accounts, a failing test you need to diagnose, or extending a `*.spec.ts` for the first time in this session. Skip it when Step 8's inline workflow already covers the change.
+For deeper surface — `tests/helpers/` API, `npx deepspace test-accounts` setup, record-cleanup convention, route-coverage rule, multi-user patterns, self-diagnosis — load `references/testing.md`. Trigger it on: writing or meaningfully extending a `*.spec.ts`; adding a new route, page, or CRUD feature (for the route-coverage rule — static and dynamic routes both need real-content assertions); `createTestUsers` erroring about missing accounts; or any failing, flaky, or passing-locally-failing-in-CI test you need to diagnose. Skip it for re-running existing tests, tiny selector/assertion tweaks inside a spec already extended this session, or code changes with no runtime behavior.
 
 ### Step 9: Deploy
 
