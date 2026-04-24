@@ -166,11 +166,18 @@ The `landing` feature scaffolds a page shell with pre-built sections (hero, feat
 ### Step 7: Run Locally
 
 ```bash
-npx deepspace login   # only required the first time (or after a session expires) — opens browser
+npx deepspace login   # one-time (or after `~/.deepspace/session` is wiped / expires) — opens browser
 npx deepspace dev     # starts all workers + Vite with HMR on localhost:5173
 ```
 
-**First run of `dev` requires login.** The CLI mints a fresh `APP_OWNER_JWT` into `.dev.vars` using your identity, and exits immediately with `Not logged in. Run \`deepspace login\` first.` if there's no stored session. If you see that exact string, don't debug or re-run the command in a loop — run `npx deepspace login` once (browser OAuth, one-time), then retry `npx deepspace dev`. The same login also satisfies `npx deepspace test-accounts create` (Step 8) and `npx deepspace deploy` (Step 9); you only re-login if `~/.deepspace/session` is wiped or the session expires.
+**First run of `dev` requires login.** The CLI mints an app-specific `APP_OWNER_JWT` into `.dev.vars` using your identity, and exits immediately with `Not logged in. Run \`deepspace login\` first.` if there's no stored session. When you see that exact string:
+
+1. **Pause and tell the user.** The command opens a browser tab (GitHub/Google OAuth) on their machine and polls for up to 10 minutes. They need to be at the keyboard to complete it — a blind background run can still time out if the user isn't ready.
+2. **Run the login command without an artificial time bound.** Do not wrap it in `timeout N`, `sleep N && kill`, or any other cutoff — those terminate login before OAuth completes and leave no session file, looking like a bug when it's actually your own kill signal. (`timeout` isn't installed on macOS by default, so don't reach for it either.) If your harness supports running a long command in the background, use that; otherwise run it in the foreground and wait.
+3. **Wait for `~/.deepspace/session` to exist** before retrying `npx deepspace dev`. Re-running `dev` while login is still polling produces the same error — that's not a bug, it's the expected order.
+4. **Never copy `.dev.vars` from a sibling app.** Every `.dev.vars` contains an `APP_OWNER_JWT` minted against that app's wrangler name; borrowing one from a neighbor causes silent auth mismatches later. The only correct way to get `.dev.vars` is to let `npx deepspace dev` regenerate it after login succeeds.
+
+The same login satisfies `npx deepspace test-accounts create` (Step 8) and `npx deepspace deploy` (Step 9); you only re-login if `~/.deepspace/session` is wiped or the session expires.
 
 ### Step 8: Test-Driven Verification (run when code changes)
 
