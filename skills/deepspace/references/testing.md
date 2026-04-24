@@ -20,7 +20,8 @@ No separate dev server required — the scaffolded `tests/playwright.config.ts` 
 - `smoke.spec.ts` — app loads, navigation renders, sign-in button present, page title correct
 - `api.spec.ts` — API endpoints return expected responses, auth required where expected
 - `collab.spec.ts` — multi-user: two users connect, see each other, data syncs between them
-- `tests/feature-tests/tests/<feature-id>.spec.ts` — per-feature merge-gate specs (e.g., `docs.spec.ts` for the docs feature). Auto-discovered and run by the e2e harness when the feature is installed. When you add a custom feature, drop a `<feature-id>.spec.ts` alongside the others with multi-user assertions.
+
+These three files are where every test lives. Installing a feature (e.g., `docs`, `kanban`, `messaging`) does not add a new spec file — extend these three per the Step 8 checklist in `SKILL.md`.
 
 ## Test Helpers (`tests/helpers/`)
 
@@ -111,16 +112,16 @@ Passing a smoke test where the detail page silently shows "Poll not found" is th
 
 ## Proactive Test Authoring
 
-Write and update tests **as you build**, not after. Every new page, feature, or user-visible change should trigger a corresponding test update in the same session — before saying "done":
+Write and update tests **as you build**, not after. The Step 8 checklist in `SKILL.md` is the canonical trigger list — each rule names a condition on the code and a required test file. Don't duplicate those rules here; instead, treat this section as the worked-example elaboration:
 
-- **New page / route / nav item** → extend `smoke.spec.ts`. Add a test that navigates to the page, asserts the expected headline/components are visible, and the page has no errors.
-- **New CRUD feature** (items, posts, whatever) → extend `smoke.spec.ts` with a create/read/edit/delete happy path for a signed-in user.
-- **New worker route, server action, AI chat route, cron handler, or any `integration.post(...)` call** → extend `api.spec.ts`. For integration calls, POST to `/api/integrations/<endpoint>` and assert the envelope is `success: true` with the data the UI consumes — this catches wrong endpoint names, the most common integration-heavy-app failure. For routes/actions/AI/cron, assert status codes, response shape, and auth gating.
-- **New multi-user behavior** (sharing, invites, messages, presence, permissions, shared scopes) → extend `collab.spec.ts`. Create two users, act in one, assert in the other.
-- **RBAC changes or permission tweaks** → add tests in `collab.spec.ts` with users of different roles, asserting what each can and cannot see/do.
+- **New page / route / nav item** → `smoke.spec.ts`. Navigate to the page, assert the expected headline/components are visible, page has no errors. Dynamic routes (`/polls/:id`) need real-content assertions against a created record — see "Route coverage" below.
+- **New CRUD feature** (items, posts, whatever — anything backed by a new schema) → `smoke.spec.ts` with a create → read → edit → delete happy path for a signed-in user.
+- **New worker route, server action, AI chat route, cron handler, any `integration.post(...)` call, or any UI that relies on an HTTP-enforced auth/role check (e.g., an admin-only action button calling `/api/actions/<name>`, even when the route itself is pre-existing)** → `api.spec.ts`. For integration calls, POST to `/api/integrations/<endpoint>` and assert the envelope is `success: true` with the data the UI consumes — this catches wrong endpoint names, the most common integration-heavy-app failure. For routes/actions/AI/cron, assert status codes, response shape, and auth gating — including the negative path (unauthenticated or wrong-role caller gets 401/403) and other error cases (bad input, missing resources).
+- **New multi-user behavior** — any schema with shared/public/team/own permissions or a `visibilityField`, or any call to `useYjs*`, `useMessages`, `useReactions`, `usePresence`, `useCanvas`, or shared scopes → `collab.spec.ts`. Create two users with `createTestUsers(browser, 2)`, act in one, assert in the other. This is the rule that catches "works for me, broken for the second user" regressions — do not skip it because the prompt didn't say "multi-user."
+- **RBAC changes or permission tweaks** → `collab.spec.ts` with users of different roles, asserting what each can and cannot see/do.
 - **Bug fix** → write the failing test first (reproducing the bug), then fix the code until it passes. Leave the test in the suite.
 
-When the user asks for a change in a follow-up message, update the tests in the same turn — don't let them drift. The test suite is a living contract.
+When the user asks for a change in a follow-up message, re-apply the Step 8 checklist to the new change and update the tests in the same turn — don't let them drift. The test suite is a living contract.
 
 ## Self-Diagnosis with Tests
 

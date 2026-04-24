@@ -157,9 +157,11 @@ Features are reference implementations in `.deepspace/features/` (scaffolded int
 
 2. Re-run `npx deepspace dev` if new DO classes or worker imports were added.
 
-Replace the scaffold home page, wire mutations to `useToast`, and use scaffolded UI primitives from `src/components/ui/` — never browser defaults. See the **UI/UX Polish** section below for the full list of triggers to load `references/uiux.md` (initial builds, new UI patterns, or the app "feels generic"). 
+Replace the scaffold home page, wire mutations to `useToast`, and use scaffolded UI primitives from `src/components/ui/` — never browser defaults. See the **UI/UX Polish** section below for the full list of triggers to load `references/uiux.md` (initial builds, new UI patterns, or the app "feels generic"). For building a public-facing landing/marketing page, see **Landing Page Design** below and load `references/landing-design.md`.
 
 Available features (check `.deepspace/features/` in the scaffolded app for the canonical list — names may evolve): `admin-page`, `ai-chat`, `canvas`, `cron`, `docs`, `file-manager`, `integration-test`, `items`, `kanban`, `landing`, `leaderboard`, `messaging`, `presence-test`, `sidebar`, `tasks`, `testing`, `topbar`, `tree`.
+
+The `landing` feature scaffolds a page shell with pre-built sections (hero, features, testimonials, FAQ, CTA, footer). It is a **skeleton**, not a finished page — shipping its placeholder content reproduces the AI-generic look. Load `references/landing-design.md` to customize it, or to build a landing page from scratch for a different shape.
 
 ### Step 7: Run Locally
 
@@ -175,21 +177,18 @@ Tests are the primary way to verify and debug code changes. The scaffolded tests
 
 **Workflow for any code change that touches runtime behavior:**
 
-1. **Customize or extend the relevant test file** to cover what you just built or modified:
-   - **smoke.spec.ts** — update when adding a new page, route, nav item, or top-level UI (landing, gallery, dashboard, settings). Assert the page loads, expected content is visible, no console/page errors.
-   - **api.spec.ts** — update when (a) you add or edit a worker route in `worker.ts` (e.g., a server action, AI chat route, or cron handler), or (b) your app calls `integration.post(endpoint, ...)` for an endpoint not yet covered by an existing test. For (b), POST to `/api/integrations/<endpoint>` with the same body the app uses and assert the envelope comes back `success: true` with the shape your UI consumes — this locks the contract with the api-worker in the same session and catches wrong endpoint names, which is the #1 failure mode for integration-heavy apps. For (a), assert status codes, response shape, auth gating, and error cases.
-   - **collab.spec.ts** — update when adding multi-user flows (shared records, messaging, permissions, presence, invites, real-time sync). Use `createTestUsers(browser, N)` and assert one user's action is visible/effective for another.
+1. **Apply the extension checklist to what you changed.** Each rule is a hard requirement — if the condition is true, the test update is not optional:
+   - **Added a schema?** → `smoke.spec.ts` CRUD happy path is **required** (create → read → edit → delete for a signed-in user).
+   - **Added or edited a route, page, nav item, or top-level UI (landing, gallery, dashboard, settings)?** → `smoke.spec.ts` page-load with a **real-content** assertion is **required** (assert specific content that should be there, not just "no crash" — see route-coverage rule in `references/testing.md`).
+   - **Added a schema with `visibilityField`, or permissions containing `'public'`, `'shared'`, `'team'`, or `'own'`?** → `collab.spec.ts` two-user assertion is **required** (user A acts, user B sees the effect).
+   - **Called `useYjs*`, `useMessages`, `useReactions`, `usePresence`, `useCanvas`, or any hook that syncs state across clients?** → `collab.spec.ts` two-user assertion is **required**.
+   - **Added or edited a worker route in `worker.ts`, a server action, `/api/ai/chat`, a cron handler, any `integration.post(...)` call site, or any UI surface whose access depends on an HTTP-enforced auth/role check (e.g., an admin-only button calling `/api/actions/<name>`, even if the route itself wasn't edited)?** → `api.spec.ts` assertion is **required**. For integration calls, POST to `/api/integrations/<endpoint>` with the same body the app uses and assert the envelope comes back `success: true` with the shape your UI consumes — this locks the contract with the api-worker in the same session and catches wrong endpoint names, the #1 failure mode for integration-heavy apps. For routes/actions, assert status codes, response shape, and auth gating — including the negative path (unauthenticated or wrong-role caller gets 401/403) and other error cases (bad input, missing resources).
+   - **Fixing a bug?** → write a failing test that reproduces it first, then fix the code until it passes. Leave the test in place.
 2. **Run the relevant tests** (`npx playwright test <file>`). The scaffolded `tests/playwright.config.ts` has a `webServer` block that auto-starts Vite on port 5173 and reuses an existing one if present — you don't need to run `npx deepspace dev` in a separate shell just to run tests.
 3. **Debug from failures, not from console logs.** If a test fails, read the assertion message, read the failing selector, then fix the code. Do not add `console.log` to diagnose — write a more specific assertion. Do not weaken or delete tests to make them green.
-4. **Re-run after each follow-up change.** When the user asks for a tweak or new feature later, update the tests alongside the code change, then run them. Treat tests as a living contract — but only exercise them when the contract actually changes.
+4. **Re-run after each follow-up change.** When the user asks for a tweak or new feature later, re-apply the checklist to the new change, update the tests, then run them. Treat tests as a living contract — but only exercise them when the contract actually changes.
 
-**When to reach for which test:**
-- Single-user UI / CRUD / navigation → extend `smoke.spec.ts`.
-- Worker route added/edited, any `integration.post(...)` call from the app, or RBAC enforced via HTTP → extend `api.spec.ts`.
-- Anything where user A's action should affect user B's view → extend `collab.spec.ts`.
-- A bug you're trying to fix → write a failing test that reproduces it first, then fix the code.
-
-Skipping tests after a code change is the #1 source of "I built it but it crashes on page load" handoffs.
+Skipping tests after a code change is the #1 source of "I built it but it crashes on page load" handoffs. Skipping `collab.spec.ts` when rule 3 or 4 fires is the #1 source of "looks fine for me, broken for the second user" regressions.
 
 For deeper surface — `tests/helpers/` API, `npx deepspace test-accounts` setup, record-cleanup convention, route-coverage rule, multi-user patterns, self-diagnosis — load `references/testing.md`. Trigger it on: writing or meaningfully extending a `*.spec.ts`; adding a new route, page, or CRUD feature (for the route-coverage rule — static and dynamic routes both need real-content assertions); `createTestUsers` erroring about missing accounts; or any failing, flaky, or passing-locally-failing-in-CI test you need to diagnose. Skip it for re-running existing tests, tiny selector/assertion tweaks inside a spec already extended this session, or code changes with no runtime behavior.
 
@@ -357,6 +356,20 @@ The scaffold's home page, theme, and UI primitive choices are placeholders — s
 - **The user says the app "feels generic"**, "boring", "default", "plain", or "needs polish".
 
 Skip it for maintenance work against UI that already follows the primitives conventions and doesn't need a new pattern.
+
+## Landing Page Design
+
+Marketing pages are a separate surface from the authenticated app UI and a separate design problem. The `landing` feature ships a pre-built shell (typewriter hero, features grid, testimonials, FAQ, CTA, footer) — using it unmodified produces a generic AI-template look regardless of theme tweaks. Breaking out of that requires a Direction-first workflow, not more primitives.
+
+**Load `references/landing-design.md` when:**
+- The user asks for a landing page, marketing page, splash page, hero section, or "front page" for signed-out visitors.
+- The user installs the `landing` feature and wants it customized to their product (the scaffolded content is not the finished page).
+- The user says the landing page "feels generic", "looks AI-generated", "needs more personality", or names a specific marketing tone they want ("editorial", "dev-tool minimalism", "playful", etc.).
+- You're about to generate atmospheric images for a hero or background — `landing-design.md` rule #9 has the required negative-prompt clause so the images don't come back with hallucinated text.
+
+Skip it for the authenticated home page of a working app (that's `uiux.md` §1), small maintenance tweaks to an already-themed landing page, or apps without a marketing surface (signed-in-only productivity tools).
+
+`references/landing-design.md` is the entry point — it has the 5-step workflow, 14 hard rules, and a short grep gate. It fans out to four on-demand sub-references (`landing-design/design-direction.md`, `style-tile.md`, `inspiration-gallery.md`, `anti-ai-checklist.md`) for the detailed material — load each one only when you reach the step that needs it.
 
 ## Testing
 
