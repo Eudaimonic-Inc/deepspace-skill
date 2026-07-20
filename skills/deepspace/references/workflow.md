@@ -82,7 +82,7 @@ Context gets compacted; anything not written down gets forgotten or relitigated.
 - **A task list** — the running to-do; while it's non-empty there is always a next action. This is what prevents stopping halfway.
 - **A state/decisions file** — current phase, exact next step, locked decisions. First thing to re-read on resume.
 - **A lessons file** — append every gotcha or wrong assumption the moment you learn it, and carry it into the next task or sub-agent brief so no mistake repeats within the build.
-- **Checkpoint commits** before risky passes (reviews, refactors, redesigns) so there's something to go back to. Commit code; keep planning/coordination docs out of the repo (gitignore the docs folder) and out of any published repo.
+- **Checkpoints before risky passes** (reviews, refactors, redesigns) so there's something to go back to: `npx deepspace checkpoint save -m "before <pass>"` snapshots the whole working tree — uncommitted files included — to the platform, restorable from any machine even if this session dies (→ `references/version-control.md`). Commit code as usual; keep planning/coordination docs out of the repo (gitignore the docs folder) and out of any published repo.
 
 ## Decide vs ask
 

@@ -60,6 +60,18 @@ npx deepspace collaborators add teammate@example.com     # existing user → add
 npx deepspace collaborators cancel teammate@example.com  # rescind a pending (un-accepted) invite
 npx deepspace collaborators remove teammate@example.com
 
+# --- Version control: cloud repo = a real git remote named `space` (no GitHub needed) → references/version-control.md ---
+npx deepspace push                       # current branch → the app's cloud repo (fast-forward only; --force to rewrite)
+npx deepspace pull                       # fetch + fast-forward; diverged → it prints the local git merge to run
+npx deepspace clone <app|name> [dir]     # collaborator on-ramp: deploy-ready clone, `space` remote pre-configured
+npx deepspace checkpoint save -m "..."   # durable snapshot of the working tree, uncommitted files included
+npx deepspace checkpoint list|show|restore|delete
+npx deepspace releases                   # immutable deploy history (who, when, from which commit)
+npx deepspace rollback [rel_…]           # re-ship a prior release's exact bundle — no rebuild
+git push space <branch>                  # bare git works too, once any wrapper has run in the repo
+# deploy auto-pushes + auto-checkpoints dirty trees; stale-base 409 → pull, integrate, redeploy
+# --json on every command (agents: parse, don't scrape); -a/--app <id or name> on all but clone (positional)
+
 # --- Integrations discovery (NO AUTH for list/info; invoke is billed) → references/integrations.md ---
 npx deepspace integrations list
 npx deepspace integrations info openai/chat-completion
