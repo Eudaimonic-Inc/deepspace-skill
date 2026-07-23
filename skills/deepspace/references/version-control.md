@@ -1,4 +1,4 @@
-_Load this reference when: syncing code between machines or collaborators without GitHub (`deepspace push`/`pull`/`clone`, or plain `git push space`), saving or restoring work-in-progress durably (`deepspace checkpoint`), viewing deploy history or undoing a bad deploy (`deepspace releases`, `deepspace rollback`), a deploy fails with `stale_base`, or a teammate/agent needs the code for an app they collaborate on._
+_Load this reference when: syncing code between machines or collaborators without GitHub (`deepspace push`/`pull`/`clone`, or plain `git push space`), saving or restoring work-in-progress durably (`deepspace checkpoint`), viewing deploy history or undoing a bad deploy (`deepspace releases`, `deepspace rollback`), a deploy fails with `stale_base`, a teammate/agent needs the code for an app they collaborate on, several agents work the same app in parallel (`deepspace workspace`, `deepspace activity`), or work transfers between agents/sessions (`deepspace handoff`, `deepspace validate`)._
 
 # Version control: cloud repo, checkpoints, releases
 
@@ -43,6 +43,72 @@ npx deepspace checkpoint delete chk_…
 
 Use them **before risky passes** (big refactors, redesigns, destructive migrations) and **at handoff points** — `-m` plus `--context-file` is how the next session/agent learns the objective, what's done, and what's broken without re-deriving it. A clean tree checkpoints as HEAD itself (cheap pointer, still restorable anywhere). Under the hood a checkpoint is a hidden ref (`refs/deepspace/checkpoints/…`) pushed over the normal git protocol — it never appears on your branches.
 
+## Workspaces: parallel agents on one app
+
+A workspace is a **registered line of work**: a ref in the app's cloud repo plus a local worktree, visible to every collaborator with its task, who's on it, and which files it touches. When more than one agent (or a human plus agents) works on one app at the same time, each takes a workspace instead of committing to the shared branch — work proceeds in parallel, publishes continuously without touching trunk, and merges ("lands") when done.
+
+The loop:
+
+```bash
+npx deepspace workspace new -t "add auth pages"   # → prints the worktree dir to work in
+cd <printed dir>                                  # branch ws/<ulid> is checked out there
+# … edit, git add, git commit as usual (commit early and often) …
+npx deepspace validate                            # run + record the project check
+npx deepspace workspace sync                      # publish — repeat after each commit
+npx deepspace workspace land                      # merge into trunk when the task is done
+```
+
+- `new -t "<task>"` (required) creates the server record + a worktree at `.deepspace/ws/<ulid>` (the id's lowercased ULID) (kept out of `git status` automatically; `--dir` to choose, `--base <rev>` to branch from something other than the cloud trunk tip). `--json` returns `{workspaceId, branch, dir, baseOid, ref}` — **`cd` into `dir` and do all work there**. The default worktree lives *inside* the app dir, so Node tooling resolves the app's `node_modules` by walking up — **no `npm install` needed**; only `attach` into a fresh clone (or a `--dir` outside the repo) needs its own install.
+- `sync` publishes your **commits** (uncommitted edits aren't synced — commit first; for a durable snapshot of *uncommitted* work use `npx deepspace checkpoint save`, which auto-links to the workspace) by force-pushing your own workspace ref — no one else's work is ever touched — and records which paths you changed. Run it from the worktree (the workspace is inferred from the `ws/<ulid>` branch). Sync after each meaningful commit: it's how other agents see your progress, how your work survives the sandbox dying, and how **overlap warnings** surface. An overlap in the output means another active workspace touched the same paths — check `deepspace activity`/`workspace list`, coordinate, and expect merge attention at land time. The signal is only as fresh as everyone's sync cadence: an agent that edits but hasn't synced is **invisible** until they do.
+- `list [--all]` shows every workspace: `↑` commits ahead of base, `↓` trunk commits since base. It works from **anywhere** with `-a <app>` — a fresh sandbox can survey in-flight work before it clones. Note `↓` measures *base staleness*, so it stays nonzero even after you merge trunk into your line; `status` (from the worktree) gives exact local truth — whether your HEAD is synced, dirty files, which **trunk** changes overlap yours, and linked checkpoints.
+- `land [--into <branch>]` merges the workspace into trunk — fast-forward when possible, else a real merge commit (both histories retained) — pushes trunk, and marks the workspace `landed`. Anyone with app access may land any workspace (finishing a crashed agent's work is legitimate). On a merge **conflict** it exits **2**, leaving the conflict in your worktree and your original work safe on the workspace ref: resolve the conflicted files, `git add` them, `git commit`, then run `workspace land` again.
+- `drop [<id>]` abandons a workspace (its creator, the owner, or an admin). Deleting an active workspace's ref through raw git is refused — drop is the intended path.
+- **After `land` or `drop`, remove the finished worktree** — from the main checkout: `git worktree remove <dir>` (then `git branch -D ws/<…>`; if git refuses over leftover untracked build artifacts, add `--force`). Landed/dropped worktrees otherwise pile up in every collaborator's `git worktree list`; both commands print (and `--json`-return) the path when you ran them from inside it.
+- `attach <id> [dir]` resumes a workspace elsewhere: inside a checkout of the app it adds a worktree; in a fresh sandbox (empty dir, pass `-a <app>`) it clones just that workspace.
+- Limits: at most **32 active** workspaces per app — land or drop finished ones. Landed workspace refs are retained 14 days, dropped ones 7 (the records persist).
+
+Parallel etiquette, derived from the above: check `workspace list` + `activity` before starting (don't duplicate work), prefer tasks that touch different files, commit+sync often, land promptly, and while others have active workspaces let trunk move via lands rather than direct pushes to it.
+
+## Handoffs: transferring work between agents
+
+A handoff packages **unfinished work plus the context to continue it**, for exactly one other agent/session to claim. It snapshots the entire tree (checkpoint mechanics — uncommitted and untracked files included) together with structured context.
+
+```bash
+npx deepspace handoff save -m "wire RBAC into admin routes" --next "make role check pass in admin.test.ts" \
+  [--context-file ctx.json]   # {objective, nextAction, state?, unresolved?: []} — -m/--next fill objective/nextAction
+npx deepspace handoff list [--all]   # open handoffs (--all includes taken)
+npx deepspace handoff show hnd_…     # full context
+npx deepspace handoff take hnd_…     # CLAIM it (exclusive) + restore onto branch handoff/<ulid>
+npx deepspace handoff take hnd_… --no-restore   # claim + print context without touching the worktree
+npx deepspace handoff drop hnd_…     # give an UNFINISHED claim back (re-opens it)
+npx deepspace handoff delete hnd_…   # done (or obsolete): delete it outright
+```
+
+- `save` requires an objective and a next action (the taker reads `nextAction` first — make it concrete). `filesChanged` is computed automatically, and the latest `validate` result for the snapshot is auto-linked. The snapshot captures the whole tree, **uncommitted and untracked files included**.
+- `take` **claims first**: a second taker is refused and told who holds it; re-running `take` as the same user replays safely (crash-safe). Restoring needs a clean worktree — commit or checkpoint your own work first (the claim itself already succeeded and survives). The restore **materializes the snapshot as a real commit** on the `handoff/<ulid>` branch, even if it was captured uncommitted.
+- Finishing a handoff that's linked to a workspace: complete the work on the `handoff/<ulid>` branch, then land it *as that workspace* — `npx deepspace workspace land -w <ws_id>` from the branch publishes your HEAD to the workspace's ref and merges it into trunk, closing the workspace as `landed`. Then `handoff delete hnd_…`.
+- `delete` is the completion path: the current **taker** may delete a taken handoff directly (no release dance — `drop` would momentarily re-advertise finished work as open). When it's open, its creator/the owner can delete it as obsolete.
+- Save a handoff whenever work stops mid-task — session ending, blocked on something, or splitting a task between agents.
+
+## Validate: recorded check results
+
+```bash
+npx deepspace validate                       # runs the package.json "validate" script
+npx deepspace validate -c "npx vitest run"   # or any explicit command
+```
+
+Runs the project's check and **records the result against the current commit** in the cloud repo — command, pass/fail, duration, output tail — visible in `activity` and auto-linked into handoffs. Exit 0 = the check passed; exit 1 = it ran and failed. In `--json`, key on **`passed`** (`ok` only means the result was recorded); on failure it includes `outputTail` so the cause is diagnosable from the one document. It runs on the **working tree**: with uncommitted changes the record carries `dirty:true` — it describes the tree, not the commit alone. Advisory by design (`land`/`deploy` don't gate on it); skip it for docs-only changes, record it for anything with code. This is how one agent knows another's synced tip was actually validated, without re-running the suite or trusting prose.
+
+## Activity: the app's coordination feed
+
+```bash
+npx deepspace activity [--limit <n>]        # newest events
+npx deepspace activity --since <cursor>     # only what's new (cursor comes from the previous page)
+npx deepspace activity --follow             # keep polling until Ctrl-C
+```
+
+One append-only feed per app: workspaces created/synced/landed/dropped, branch pushes, checkpoints and handoffs saved/taken, validations, releases — each with actor and time. It's how parallel agents stay aware without a chat channel: check it before starting work and when an overlap warning appears. `--json` emits **exactly one page per invocation** — parse the document, then call again with `--since <cursor>` while `hasMore` is true (`--follow --json` instead streams one JSON line per page).
+
 ## Releases: deploy history and rollback
 
 Every `deploy` records an immutable **release**: actor, timestamp, the commit (or checkpoint) it was built from, and the exact built bundle — retained server-side.
@@ -74,3 +140,8 @@ npx deepspace rollback rel_…        # restore a specific one
 | `deploy --json` returned `recoverable:false` | `npx deepspace push` (integrate first if it was rejected), then redeploy |
 | About to do something risky | `npx deepspace checkpoint save -m "before <risky thing>"` |
 | Need history/diff/blame of the cloud repo | plain git against the `space` remote (`git fetch space`, `git log space/main`) |
+| Working alongside other agents on one app | `npx deepspace workspace new -t "…"` → work in the printed dir → `sync` often → `land` |
+| `workspace land` exited 2 (merge conflict) | resolve the conflicted files in the worktree, `git add` + `git commit`, run `land` again |
+| Stopping mid-task; someone else will continue | `npx deepspace handoff save -m "…" --next "…"` — the taker runs `handoff take hnd_…` |
+| Finished a handoff you took | land it (via `workspace land -w <ws_id>` when linked), then `npx deepspace handoff delete hnd_…` |
+| What are the other agents doing right now? | `npx deepspace activity` / `npx deepspace workspace list` (both work anywhere with `-a <app>`) |
