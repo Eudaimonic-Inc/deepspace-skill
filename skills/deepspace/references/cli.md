@@ -70,7 +70,7 @@ npx deepspace releases                   # immutable deploy history (who, when, 
 npx deepspace rollback [rel_…]           # re-ship a prior release's exact bundle — no rebuild
 git push space <branch>                  # bare git works too, once any wrapper has run in the repo
 # deploy auto-pushes + auto-checkpoints dirty trees; stale-base 409 → pull, integrate, redeploy
-# --json on every command (agents: parse, don't scrape); -a/--app <id or name> on all but clone (positional)
+# --json on every command (agents: parse, don't scrape); -a/--app <id or name> on all but clone (positional) and deploy (deploys the checkout it runs in)
 
 # --- Integrations discovery (NO AUTH for list/info; invoke is billed) → references/integrations.md ---
 npx deepspace integrations list
