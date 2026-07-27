@@ -91,6 +91,7 @@ npx deepspace handoff delete hnd_…   # done (or obsolete): delete it outright
 - Finishing a handoff that's linked to a workspace: complete the work on the `handoff/<ulid>` branch, then land it *as that workspace* — `npx deepspace workspace land -w <ws_id>` from the branch publishes your HEAD to the workspace's ref and merges it into trunk, closing the workspace as `landed`. Then `handoff delete hnd_…`.
 - `delete` is the completion path: the current **taker** may delete a taken handoff directly (no release dance — `drop` would momentarily re-advertise finished work as open). When it's open, its creator/the owner can delete it as obsolete.
 - Save a handoff whenever work stops mid-task — session ending, blocked on something, or splitting a task between agents.
+- **The `chk_`/`hnd_` boundary is enforced.** Checkpoints and handoffs share one snapshot store, but each verb accepts only its own id kind: a wrong-kind id (`checkpoint restore hnd_…`, `handoff show chk_…`, etc.) is refused with `code:"wrong_kind"` and points at the right command. This is a claim-safety property — **never materialize a handoff with `checkpoint restore`; that would restore the snapshot without the exclusive claim.** To work a handoff, `handoff take` it (which claims first); to restore a plain checkpoint, use `checkpoint restore`.
 
 ## Validate: recorded check results
 
