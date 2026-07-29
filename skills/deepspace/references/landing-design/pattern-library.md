@@ -33,7 +33,7 @@ These two paragraphs apply to every pattern in every section file. Read once.
   const LANDING_SEEN_KEY = 'app-landing-seen'
   function markLandingSeen() { try { localStorage.setItem(LANDING_SEEN_KEY, 'true') } catch {} }
   ```
-- **Navigation** goes to `/home` (which is **public by default** in the scaffold — dynamic but not gated, at `src/pages/(app)/home.tsx`) via `useNavigate()` from `react-router-dom`. To force sign-in on a CTA click, point at a route under `src/pages/(app)/(protected)/` (any file there is gated by the scaffolded `(app)/(protected)/_layout.tsx`) — see SKILL.md Step 4. Sign-in itself lives in the scaffold's global `Navigation.tsx` (AuthOverlay).
+- **Navigation** goes to `/home` (which is **public by default** in the scaffold — dynamic but not gated, at `src/pages/(app)/home.tsx`) via `useNavigate()` from `react-router-dom`. To force sign-in on a CTA click, point at a route under `src/pages/(app)/(protected)/` (any file there is gated by the scaffolded `(app)/(protected)/_layout.tsx`) — see SKILL.md Step 4. Sign-in itself lives in the scaffold's global nav (starter: `Navigation.tsx`; copilot: `AppSidebar.tsx`) via `AuthOverlay`.
 
 ## Universal rules
 

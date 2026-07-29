@@ -2,7 +2,7 @@
 
 A DeepSpace app is judged on three things the first time someone opens it: the home page, the theme, and the UI primitives it picks.
 
-**The scaffold shell is a placeholder, not a design.** The home page, navigation bar, and theme that ship with a fresh scaffold are deliberately bare scaffolding — there is no "house style" to extend or imitate. Design the app's own look (layout, theme tokens, typography, density) from the product's point of view; for landing/home pages, work from `references/landing-design/` (design directions, pattern library, examples). Never reuse the placeholder page structure as the app's design.
+**The scaffold shell is a placeholder, not a design.** The home page, navigation bar, and theme that ship with a fresh scaffold are deliberately bare scaffolding — there is no "house style" to extend or imitate. Design the app's own look (layout, theme tokens, typography, density) from the product's point of view; for landing/home pages, work from `references/landing-design/` (design directions, pattern library, examples). Never reuse the placeholder page structure as the app's design. One structural exception: in **copilot-template** apps (`--template copilot`) the three-panel shell — sidebar, main panel, AI chat dock — is the app's layout and stays (restyle it, don't remove it); the page *content* and themes inside it are still placeholders to replace.
 
 **Load this reference whenever you:**
 - Build or edit the home page / landing / first-run state.
@@ -20,9 +20,9 @@ The scaffold ships **two** front-of-house pages, and this section is about the s
 - `src/pages/index.tsx` — the **static landing** at `/`. It lives at the top level of `src/pages/`, so no DeepSpace providers mount: no auth fetch, no WebSocket, and no data hooks. It's the marketing front door; design it with `references/landing-design.md`, not this procedure.
 - `src/pages/(app)/home.tsx` — the **dynamic home** at `/home` (`(app)` is a route group — it doesn't appear in the URL). It sits inside the provider boundary, so `useAuth`/`useQuery` work, signed-out included (`allowAnonymous`). **This is the page the procedure below targets.** If the product wants the live surface at `/` instead of a marketing page, move the home page to the top slot only by keeping it under `(app)/` (e.g. `(app)/index.tsx` after removing the static landing) — a top-level `index.tsx` can't call data hooks.
 
-The scaffolded `src/pages/(app)/home.tsx` is an explicit stub: the app name plus "This is a placeholder page. Replace `src/pages/(app)/home.tsx`…". It must be replaced before shipping — and it is a *stub to delete*, not a layout to grow.
+The scaffolded `src/pages/(app)/home.tsx` is an explicit stub — the starter's says "This is a placeholder page. Replace `src/pages/(app)/home.tsx`…", the copilot template's says "Your app goes here". It must be replaced before shipping — and it is a *stub to delete*, not a layout to grow.
 
-Grep for `placeholder page` in `src/` — if it still exists at the end of the session, the home page is not done.
+Grep for `placeholder page\|Your app goes here` in `src/` — if either still exists at the end of the session, the home page is not done.
 
 **Build the home page with this decision procedure — in order, no skipping:**
 
@@ -66,7 +66,7 @@ Themes are `[data-theme="<id>"]` CSS blocks overriding the shadcn tokens, activa
 3. **Register it** — add an entry to the `THEMES` array in `src/themes.ts` (type safety + catalog), then set `data-theme="<your-id>"` in `index.html`.
 4. **Shape** — the primitives take their corner rounding from `--radius` (default `0.5rem`). Sharp/technical product → shrink it; soft/friendly → grow it. One variable, whole-app effect.
 5. **Update `<title>`** in `index.html` and replace the favicon. The defaults say "DeepSpace App".
-6. **Wordmark & nav** — the scaffold `Navigation.tsx` is a minimal placeholder bar. Restyle or rebuild it to fit the app (a plain-text wordmark with a deliberate treatment is enough — §2a), but keep its wired mechanisms: sign-in (`AuthOverlay`), sign-out, and links driven by `src/nav.ts` (append there to add items). **Keep the `data-testid` hooks (`app-navigation`, `nav-sign-in-button`, `nav-user-name`)** — the shipped tests assert on them.
+6. **Wordmark & nav** — the nav component depends on the template: the starter ships `Navigation.tsx` (a minimal placeholder top bar — restyle or rebuild it freely); the copilot template ships `src/components/sidebar/AppSidebar.tsx` (a collapsible rail that is part of the shell — restyle it, keep its fixed-icon collapse). Either way, a plain-text wordmark with a deliberate treatment is enough (§2a), and keep the wired mechanisms: sign-in (`AuthOverlay`), sign-out, and links driven by `src/nav.ts` (append there to add items). **Keep the `data-testid` hooks (`app-navigation`, `nav-sign-in-button`, `nav-user-name`)** — the shipped tests assert on them.
 
 A single token swap is not enough; a theme that still looks like `slate` with one changed accent is not a theme. Set at least: background, foreground, card, primary, secondary, accent, ring.
 
@@ -120,7 +120,7 @@ The scaffold ships a copy-paste primitives kit in `src/components/ui/` (index at
 | Search box | `SearchInput` (wraps `Input` with search icon + clear) | raw `<input type="search">` |
 | Tabs | `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` | hand-rolled tab buttons |
 | Anchored popups | `Popover`, `PopoverTrigger`, `PopoverContent` | absolutely-positioned divs |
-| Tooltips | `Tooltip`, `TooltipTrigger`, `TooltipContent` — each `Tooltip` ships its own provider (200ms delay), so no app-level `TooltipProvider` is needed; pass `delay` per tooltip | `title=""` attribute |
+| Tooltips | `Tooltip`, `TooltipTrigger`, `TooltipContent` — one app-level `TooltipProvider` (already mounted in `_app.tsx`, 200ms) owns the delay and groups nearby triggers so they switch instantly. Don't wrap individual tooltips in their own provider — a nested provider shadows the app-level one and breaks the grouping. Pass `delay` on a single `Tooltip` for one-off timing | `title=""` attribute |
 | Avatars | `Avatar`, `AvatarImage`, `AvatarFallback` | raw `<img>` |
 | Status pills | `Badge` | hand-rolled rounded divs |
 | Cards / tables / separators | No primitive — token-styled elements (`rounded-lg border border-border bg-card p-4`; styled `<table>` with `border-border` rows; `border-t border-border`) | hardcoded colors |
@@ -223,7 +223,7 @@ If the smoke test passes but the app still looks unfinished, it is almost always
 ```bash
 # Half 1 — ABSENCE: any hit below means the app is NOT ready
 grep -rn "<select\|window\.confirm\|window\.alert\|window\.prompt" src/
-grep -rn "placeholder page" src/
+grep -rn "placeholder page\|Your app goes here" src/
 grep -rn 'data-theme="slate"' index.html
 
 # Half 2 — PRESENCE: any MISS below means the home page is NOT done

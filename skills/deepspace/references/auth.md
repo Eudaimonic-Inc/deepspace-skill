@@ -1,6 +1,6 @@
 # Auth — public, gated, and mixed configurations
 
-Load this reference when picking the auth model for a new app, adding a gated page, customizing the sign-in fallback, debugging "why does my page show the AuthOverlay" / "why are signed-out users seeing my admin route," or replacing `Navigation.tsx`. Skip it for the default mixed config plus `(app)/(protected)/` page additions, which are one-line changes that don't need this depth.
+Load this reference when picking the auth model for a new app, adding a gated page, customizing the sign-in fallback, debugging "why does my page show the AuthOverlay" / "why are signed-out users seeing my admin route," or replacing the scaffold nav (`Navigation.tsx` in starter-template apps; `src/components/sidebar/AppSidebar.tsx` in copilot). Skip it for the default mixed config plus `(app)/(protected)/` page additions, which are one-line changes that don't need this depth.
 
 ## The three configurations
 
@@ -61,9 +61,9 @@ Adding a new gated page is a one-file change: drop it inside `(app)/(protected)/
 
 - **Use auth-layer state for auth checks; use profile readiness for profile-backed UI.** `useAuth().isSignedIn` is the canonical signed-in check, and `useAuthStatus()` is safe in app shells before `<RecordProvider>`. `useUser()` loads async; for user menus, role nav, account names, admin controls, or authenticated dashboards under `<RecordProvider>`, prefer `useAuthProfileReady({ requireUser: true })` and render a skeleton while `isSignedIn && userLoading`.
 - `<AuthGate>` controls the **UI layer** — children don't mount until signed in. `RecordProvider allowAnonymous` controls the **data layer** — server accepts unsigned client connections. Inside an `<AuthGate>` subtree the user is always signed in, so `allowAnonymous` is moot there.
-- Don't add a second sign-out — the avatar dropdown in `Navigation.tsx` already calls `signOut()`.
-- **If the app requires sign-in, a sign-out control is non-negotiable.** If you replace `Navigation.tsx`, ensure it still calls `signOut()` from `deepspace` somewhere reachable when signed in.
-- Don't rewrite `Navigation.tsx` just to theme it — edit the `@theme` tokens or pick a `data-theme` preset (see `references/uiux.md` §2).
+- Don't add a second sign-out — the scaffold nav's account menu (starter: `Navigation.tsx` avatar dropdown; copilot: `AppSidebar.tsx` account row) already calls `signOut()`.
+- **If the app requires sign-in, a sign-out control is non-negotiable.** If you replace the nav component, ensure it still calls `signOut()` from `deepspace` somewhere reachable when signed in.
+- Don't rewrite the nav component just to theme it — edit the `@theme` tokens or pick a `data-theme` preset (see `references/uiux.md` §2).
 - **Safari + localhost cookies** — `__Secure-` cookies require HTTPS; Safari enforces this on localhost, Chrome doesn't. Auth appears broken on Safari in local dev. Works fine once deployed.
 - **JWT provides user profile** — no separate `/api/users/me` call needed.
 
@@ -116,13 +116,13 @@ Do not rewrite either file. The defaults already:
 
 - Wrap the tree in the scaffold's local `ToastProvider` (import `useToast` from `@/components/ui`, not `deepspace`).
 - Render routes for both signed-in and signed-out users.
-- Expose a Sign In button in `Navigation.tsx` that opens `<AuthOverlay onClose={...}/>` (GitHub + Google + email/password) and a sign-out option in the avatar dropdown.
+- Expose a Sign In button in the scaffold nav (starter: `Navigation.tsx`; copilot: `AppSidebar.tsx`) that opens `<AuthOverlay onClose={...}/>` (GitHub + Google + email/password) and a sign-out option in its account menu.
 
 Extend by adding schemas, pages, and nav entries (`src/nav.ts`). To share data across DeepSpace apps (e.g., the email-handle workspace), pass `sharedScopes` to the existing `<RecordScope>` — but see `references/architecture.md` § "Cross-app shared scopes" for the worker-side proxy that's required.
 
 ## Landing pages and app chrome
 
-The global `<Navigation />` renders from `(app)/_layout.tsx`, so it only wraps pages under `(app)/`. The shipped landing (`src/pages/index.tsx`) is a static top-level page — it never inherits app chrome, and needs no patch.
+The app chrome (starter's `<Navigation />` bar; copilot's sidebar + chat-dock shell) renders from `(app)/_layout.tsx`, so it only wraps pages under `(app)/`. The shipped landing (`src/pages/index.tsx`) is a static top-level page — it never inherits app chrome, and needs no patch.
 
 Only if your landing lives *under* `(app)/` (e.g. installed via `npx deepspace add landing`, which places it at `(app)/landing.tsx`) do you need to hide the global nav on that route, in `(app)/_layout.tsx`:
 

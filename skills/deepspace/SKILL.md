@@ -37,6 +37,12 @@ cd <app-name>                            # (= deploy subdomain). Edit it later i
 npx deepspace dev                        # Vite + worker, HMR on localhost:5173
 ```
 
+Two templates ship: `starter` (default — minimal top-bar shell) and `copilot` (three-panel shell: collapsible sidebar, main panel, AI chat dock prewired to the app's records). Pick with `--template` (note the `--` when going through `npm create`):
+
+```bash
+npm create deepspace@latest <app-name> -- --template copilot
+```
+
 The two import surfaces:
 
 ```typescript
@@ -120,7 +126,7 @@ Before editing files, scan this table and `Read` every row whose trigger matches
 
 ## Traps worth knowing up front
 
-- **The scaffold shell is a placeholder, not a design.** The stub home page, minimal nav bar, and `slate`/`paper` themes are deliberately bare — never extend or imitate them as "the house style." Design the app's own look and theme (→ `references/uiux.md`; landing pages → `references/landing-design/`).
+- **The scaffold shell is a placeholder, not a design.** The stub home page, minimal nav, and `slate`/`paper` themes are deliberately bare — never extend or imitate them as "the house style." Design the app's own look and theme (→ `references/uiux.md`; landing pages → `references/landing-design/`).
 - **Scaffold's UI primitives shadow the SDK.** `_app.tsx` uses `ToastProvider` from `src/components/ui/`, not `deepspace`. Importing `useToast` (or any local primitive) from `deepspace` throws at runtime. **Import from `../components/ui`.**
 - **Page files belong in `src/pages/`** — generouted scans only there; pages under `src/features/<name>/` 404.
 - **Data/auth hooks only work under `(app)/`** — providers mount in `(app)/_layout.tsx`, so a top-level (static) page calling `useAuth`/`useQuery` crashes at render. Details: the scaffold's CLAUDE.md § "Static vs dynamic pages" and `references/auth.md`.

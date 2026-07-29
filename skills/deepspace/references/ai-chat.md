@@ -31,6 +31,8 @@ The streaming pipeline (`POST /api/ai/chat` handler):
 
 ## Reference implementation — `npx deepspace add ai-chat`
 
+> **Copilot-template apps already ship this chat surface** — the same ChatPanel lives at `src/components/chat/ChatPanel.tsx`, embedded in the shell's chat dock (`src/components/shell/ChatDock.tsx`). Don't run `add ai-chat` there: the installer doesn't detect the template's copy (different path), so it would install a second, divergent ChatPanel against the same collections. `add ai-chat` is for adding the full-page assistant to starter-template apps.
+
 Installs three files into the scaffolded app:
 
 - `src/components/ChatPanel.tsx` — reusable chat surface. Renders `useQuery('ai-messages')` + an in-flight overlay during the stream. Owns model picker, abort button, and Markdown rendering (`react-markdown` + GFM + `rehype-highlight`).
@@ -49,20 +51,26 @@ Edit `ALLOWED_MODELS` in `src/ai/chat-routes.ts`:
 
 ```typescript
 const ALLOWED_MODELS: Record<string, 'anthropic' | 'openai' | 'cerebras'> = {
-  'claude-opus-4-7':    'anthropic',
-  'claude-sonnet-4-6':  'anthropic',
+  'claude-opus-4-8':    'anthropic',
+  'claude-sonnet-5':    'anthropic',
   'claude-haiku-4-5':   'anthropic',
+  'gpt-5.6-sol':        'openai',
+  'gpt-5.6-terra':      'openai',
+  'gpt-5.6-luna':       'openai',
+  'gpt-oss-120b':       'cerebras',
+  // Prior generation — kept served so saved picks don't 400:
+  'claude-sonnet-4-6':  'anthropic',
+  'claude-opus-4-7':    'anthropic',
   'gpt-5.4':            'openai',
   'gpt-5.4-mini':       'openai',
   'gpt-5.4-nano':       'openai',
-  'gpt-oss-120b':       'cerebras',
 }
-const DEFAULT_MODEL = 'claude-sonnet-4-6'
+const DEFAULT_MODEL = 'claude-sonnet-5'
 ```
 
 Unknown `modelId`s **400 explicitly** — there's no silent fallback to the default. (Silent fallback used to mask drift between the worker allowlist and the client picker.)
 
-> **Keep `ChatPanel`'s `DEFAULT_MODELS` and `worker.ts`'s `ALLOWED_MODELS` in sync.** The picker shows whatever `DEFAULT_MODELS` lists; the worker only accepts whatever `ALLOWED_MODELS` keys. Adding a new model is a 2-file edit. Drift produces a 400 when the user picks the new option.
+> **Keep `ChatPanel`'s `DEFAULT_MODELS` and `src/ai/chat-routes.ts`'s `ALLOWED_MODELS` in sync.** The picker shows whatever `DEFAULT_MODELS` lists; the worker only accepts whatever `ALLOWED_MODELS` keys. Adding a new model is a 2-file edit. Drift produces a 400 when the user picks the new option.
 
 The provider routing is handled by `createDeepSpaceAI(env, provider, { authToken })` from `'deepspace/worker'`:
 
