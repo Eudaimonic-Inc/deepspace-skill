@@ -34,9 +34,11 @@ Static top-level pages (like the shipped `index.tsx` landing) sit outside `(app)
 
 Three tiers, decided by where the file lives under `src/pages/` (`(app)` and `(protected)` are generouted route groups — the parentheses mean they don't appear in the URL, so `(app)/home.tsx` serves `/home`):
 
-- **Static + public** — top level of `src/pages/`. No providers mount: no `/api/auth` fetch, no records WebSocket, and no `useAuth`/`useQuery` (they crash at render). For landing/marketing/docs/legal.
-- **Dynamic + public** — directly under `(app)/`. Providers mount (`(app)/_layout.tsx`); hooks work signed-out via `allowAnonymous`.
-- **Dynamic + gated** — under `(app)/(protected)/`. The scaffolded `(app)/(protected)/_layout.tsx` applies `<AuthGate>` once for everything inside.
+| Put a page here | It gets | Use for |
+|---|---|---|
+| `src/pages/*.tsx` (top level) | **Static + public** — no providers mount: no `/api/auth` fetch, no records WebSocket. `useAuth`/`useQuery`/`useMutations` crash at render. | Landing, marketing, docs, legal — anything logged-out or crawler traffic hits. |
+| `src/pages/(app)/*.tsx` | **Dynamic + public** — providers mount (`(app)/_layout.tsx`); hooks work signed-out via `allowAnonymous`. | Signed-out-visible app pages that read/write live data. |
+| `src/pages/(app)/(protected)/*.tsx` | **Dynamic + gated** — the scaffolded `(app)/(protected)/_layout.tsx` applies `<AuthGate>` once for everything inside. | Pages that must not render without a session. |
 
 ```
 src/pages/
@@ -50,7 +52,7 @@ src/pages/
       api-status.tsx        ← gated (/api-status)
 ```
 
-Adding a new gated page is a one-file change: drop it inside `(app)/(protected)/`. To flip a page between static and dynamic, move it across the `(app)/` boundary and fix up its `../` relative imports for the new depth. `npx deepspace add <feature>` places feature pages under `(app)/` (or `(app)/(protected)/`) automatically.
+Adding a new gated page is a one-file change: drop it inside `(app)/(protected)/`. To flip a page between static and dynamic, move it across the `(app)/` boundary and fix up its `../` relative imports for the new depth. `npx deepspace add <feature>` places feature pages under `(app)/` (or `(app)/(protected)/` for protected ones) automatically, so features always get their providers.
 
 ## `<AuthGate>` props
 
