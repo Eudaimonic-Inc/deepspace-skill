@@ -97,7 +97,7 @@ Before editing files, scan this table and `Read` every row whose trigger matches
 | `references/workflow.md` | Starting an end-to-end app build — a new product, a clone, or any multi-feature request. |
 | `references/cli.md` | The login contract, the full CLI command catalog (`dev`/`kill`/`integrations`/`test-accounts`/`screenshot`/`library`), and the `test` command. |
 | `references/deploy.md` | Deploy mechanics, the `.dev.vars` contract, secret handling, and multi-environment / staging deploys (`deploy --env`). |
-| `references/version-control.md` | Syncing code without GitHub (`push`/`pull`/`clone`, `git push space`), durable WIP snapshots (`checkpoint`), deploy history + undo (`releases`/`rollback`), a `stale_base`/`behind_trunk` refusal, or coordinating parallel agents on one app (`workspace`/`activity`/`handoff`/`validate`). |
+| `references/version-control.md` | Syncing app code — the built-in **cloud repo** is a DeepSpace app's default version control, so reach for it before GitHub (`push`/`pull`/`clone`, `git push space`); also durable WIP snapshots (`checkpoint`), deploy history + undo (`releases`/`rollback`), a `stale_base`/`behind_trunk` refusal, or coordinating parallel agents on one app (`workspace`/`activity`/`handoff`/`validate`). |
 | `references/secrets.md` | Managing app secrets, using `npx deepspace secrets`, migrating a legacy `.dev.vars` app, configs/environments, or generated-cache behavior. |
 | `references/app-identity.md` | App ids (`DEEPSPACE_APP_ID`), forking a cloned repo (`init --new-id`), renames, `apps`/`undeploy`, ownership transfer. |
 | `references/legacy-migration.md` | A pre-app-id app (name-based id in `apps`, no `DEEPSPACE_APP_ID`), or your own deploy failing with "name … taken by another app". |
