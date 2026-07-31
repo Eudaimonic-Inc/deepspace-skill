@@ -1,4 +1,4 @@
-_Load this reference when working with app ids (`DEEPSPACE_APP_ID`), forking a cloned repo (`init --new-id`), renaming an app, listing your apps (`apps`), undeploying, or transferring ownership._
+_Load this reference when working with app ids (`DEEPSPACE_APP_ID`), forking a cloned repo (`app init --new-id`), renaming an app, listing your apps (`app list`), undeploying, or transferring ownership._
 
 # App identity: ids, names, renames, transfers
 
@@ -32,7 +32,7 @@ npx deepspace app undeploy <app-id-or-name> # positional target (registry-resolv
 
 The positional form takes an app id **or** a live subdomain name (resolved via the registry), so you can undeploy an app you've lost track of without being in its checkout. Omit it to fall back to `DEEPSPACE_APP_ID` from the nearest `wrangler.toml` (with `--env <name>` selecting that env's app; a positional name overrides `--env`).
 
-`undeploy` deletes the app's stored data but the id survives — deploying again revives the same app (same collaborators, same secrets store), and within 30 days the old name is still yours. Active (deployed) apps count against your tier's cap; undeployed ones don't, and revival is quota-checked like a fresh deploy. `apps` is the answer to "which app do I undeploy?" when a quota message names an id you've lost track of.
+`undeploy` deletes the app's stored data but the id survives — deploying again revives the same app (same collaborators, same secrets store), and within 30 days the old name is still yours. Active (deployed) apps count against your tier's cap; undeployed ones don't, and revival is quota-checked like a fresh deploy. `app list` is the answer to "which app do I undeploy?" when a quota message names an id you've lost track of.
 
 ## Ownership transfer
 

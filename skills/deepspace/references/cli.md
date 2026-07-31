@@ -60,7 +60,11 @@ npx deepspace secrets set API_KEY=...    # no setup step; works pre-deploy
 npx deepspace secrets list
 npx deepspace secrets pull               # refresh the .dev.vars cache
 npx deepspace secrets upload .env        # dotenv/JSON; the legacy-.dev.vars migration path
-npx deepspace secrets configs create staging --copy-from prd
+npx deepspace secrets get KEY --plain    # print one value (byte-exact when redirected)
+npx deepspace secrets download --format dotenv|json|shell      # a whole config to stdout
+npx deepspace secrets configs list       # the app's configs (one per env)
+npx deepspace secrets configs create staging --copy-from prd   # server-side copy — don't re-set values by hand
+npx deepspace secrets configs delete staging                   # config + all its secrets
 # every secrets command: -a/--app <appId>, -c/--config <name>, -e/--env <name>
 
 # --- App identity & lifecycle (id = the app; name = the URL) → references/app-identity.md ---
@@ -102,6 +106,10 @@ npx deepspace clone <app|app_id> [dir]   # materialize the repo (remote is named
 npx deepspace workspace new -t "…"       # durable parallel line of work; sync | status | list | land | drop
 npx deepspace releases                   # append-only deploy history
 npx deepspace rollback [rel_…]           # re-ship a prior release's bundle (no rebuild)
+
+# --- Features & feedback ---
+npx deepspace add <feature> --install    # also runs your package manager for the feature's new deps
+npx deepspace feedback "<title>" -t bug|feature|other -m "<details>" [--yes --json]  # file it with DeepSpace
 ```
 
 Scaffolding also has a CLI home: `npx deepspace app create <name>` runs `create-deepspace` and forwards every flag.

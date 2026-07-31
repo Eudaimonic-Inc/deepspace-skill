@@ -26,6 +26,7 @@ Every scaffolded app includes Playwright tests in `tests/` with helpers for auth
 - **All tests use real services** — never mock internal hooks.
 - **Debug from failures, not console logs.** Read the assertion + selector, fix the code. Don't add `console.log` to diagnose — write a more specific assertion. Don't weaken or delete tests to make them green.
 - **Re-run after each follow-up change.** Re-apply the checklist; tests are a living contract.
+- **Tests are code, so they live where the code lives** — the same workspace branch as the change they cover, committed alongside it (`references/version-control.md`). A spec is not a scratch artifact: don't leave it uncommitted, don't land the feature and follow up with the test later, and don't park test work on trunk while the feature sits on a workspace. Deploy refuses a dirty worktree anyway, so an uncommitted spec will block the ship it was written to justify.
 
 Skipping the checklist when its conditions fire is the most common cause of "I built it but it crashes on page load" handoffs and "looks fine for me, broken for the second user" regressions.
 

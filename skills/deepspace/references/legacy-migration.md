@@ -24,7 +24,7 @@ Deploy failed
 ```
 
 That error against your **own** app name = a minted id shadowing a legacy registration.
-Fix it by hand — `init` won't overwrite an existing id (that's the `--new-id` fork flag):
+Fix it by hand — `app init` won't overwrite an existing id (that's the `--new-id` fork flag):
 
 ```bash
 npx deepspace app list --json    # the legacy entry's appId is its name

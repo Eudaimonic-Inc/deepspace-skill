@@ -7,7 +7,7 @@ _Load this reference when you commit, push, or pull an app's code; when you star
 Consequences worth internalizing before you touch anything:
 
 - **It is a real git repo,** not a sync gimmick. The platform speaks the Git smart-HTTP protocol; `deepspace push` / `pull` / `clone` are thin wrappers over `git push` / `git fetch` / `git clone` against a remote named `space`. Plain `git push space main` works.
-- **It is the default VCS for a DeepSpace app.** Don't `git init` a second history, don't add a GitHub remote, don't propose GitHub Actions — unless the user explicitly asks for GitHub. There is no account to create and no remote to add; the wrappers install the remote and credential helper for you.
+- **It is the default VCS for a DeepSpace app, and it is additive.** No GitHub required — there's no account to create and no remote to add, because the wrappers install the `space` remote and its credential helper for you. It also doesn't *displace* GitHub: `space` is one more remote on the same repo, so a GitHub `origin` coexists with it perfectly (→ "Works alongside GitHub" below). Don't `git init` a second history and don't set GitHub up unprompted — but when the user wants GitHub, wire it up; nothing about DeepSpace VC is in the way.
 - **Nothing is private to your sandbox.** Workspaces, pushes, and releases are visible to every collaborator and every other agent on the app. That's the point: coordination lives on the server, not in your context window.
 - **The platform holds the source that a release shipped.** That's why deploy is commit-first (below) — a release with no commit behind it is a release nobody can recover.
 
@@ -109,6 +109,26 @@ npx deepspace pull [-b <branch>]           # fetch + fast-forward
 - **`push --force` is guarded,** not raw: it refuses whenever the remote tip is a commit your branch doesn't contain, so no work is silently dropped. A first force from a fresh clone or pull is refused until you re-integrate that tip. Don't reach for it to escape a `non_fast_forward` — integrate instead.
 - **Committed secrets are pre-checked.** `push` refuses a branch tracking `.dev.vars*`, `.env*`, `.npmrc`, `.envrc`, or `.mcp.json`. `--allow-committed-secrets` skips only the CLI's check — the platform also refuses recognized secret files, and its check is case-sensitive, so an oddly-cased name (`.ENV`) can still slip through. Fix the branch; don't pass the flag.
 - **`DEEPSPACE_DEPLOY_URL` selects the platform host** the repo talks to (staging vs production) and is baked into the injected credential config. If it is set in the environment, the repo, releases, and activity you see belong to *that* host — a mismatch between what you set for one command and not another is a common source of "my workspace vanished". Keep it consistent for the whole session or leave it unset.
+
+## Works alongside GitHub
+
+DeepSpace VC is **not** a GitHub replacement, and the two are not a choice. One local repo, one history, two remotes:
+
+| Remote | Points at | Synced by | Owns |
+|---|---|---|---|
+| `space` | The app's cloud repo on the DeepSpace platform | `deepspace push` / `pull` / `clone` (or plain `git push space main`) | Deploy lineage, releases/rollback, workspaces, activity |
+| `origin` | GitHub (or GitLab, or anything else) — if the user wants one | `git push origin main` / `git pull origin main`, as always | PRs, code review, Actions, whatever the team already uses |
+
+Adding GitHub to an app that already has a cloud repo is the ordinary git move — `git remote add origin git@github.com:org/app.git && git push -u origin main`. Nothing to migrate: the commits are the same objects, so both remotes end up holding the same history. Going the other way (a repo that started on GitHub) needs nothing at all — the first `deepspace push` or `deploy` adds `space` and uploads the history.
+
+**The one rule: for deploys, trunk truth is the cloud repo.** Deploy's `behind_trunk` / `stale_base` guards, the release ledger, `activity`, and `rollback` all read `space` — a commit that exists only on GitHub is invisible to them, and a release can't record source the platform doesn't hold. So keep the two trunks in step: push to both after landing (`deepspace push && git push origin main`), or make one a scheduled mirror of the other. Drift is not corruption — it just means the live app and the GitHub view disagree about what "latest" is.
+
+Two smaller things worth knowing:
+
+- **Workspace refs live only on `space`.** They're `refs/deepspace/ws/*`, not `refs/heads/*`, so a plain `git push origin` never carries them and coordination (overlap warnings, base staleness, activity) only works through `space`. That's usually what you want: in-flight agent work stays off GitHub, and GitHub sees the merge commit after `workspace land`. If the team wants PR review of a line of work, push the `ws/<id>` branch to `origin` as a normal branch and open the PR there — the workspace keeps coordinating on `space` either way.
+- **Releases have no GitHub equivalent and need none.** Release bundles are retained platform-side; `rollback` re-ships one without a rebuild. GitHub tags are a fine parallel habit, not a substitute.
+
+If the user asks for CI deploys from GitHub Actions, that's a supported thing to build — the runner needs a DeepSpace session (`deepspace auth login --email <e> --password-stdin`, or `DEEPSPACE_EMAIL` / `DEEPSPACE_PASSWORD` in the environment; never the plaintext `--password` flag, which leaks through argv). Don't set it up unprompted.
 
 ## The output contract and exit codes
 
