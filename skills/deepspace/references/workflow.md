@@ -10,7 +10,7 @@ _Load this reference at the start of building a complete app end to end — a ne
 
 If the app follows a reference product (a clone, "like X but…", a screenshot), study the real thing first — never build "like X" from memory.
 
-- Reverse-engineer it end to end: full feature surface, the core loop, pricing/tiers, data model — and the real mechanics underneath. Drive the live product headlessly (Playwright, or capture with `npx deepspace screenshot <url> <out.png>`) and **watch the network traffic while you drive** — the API calls and request/response shapes reveal how it actually works (the pipeline, the providers, sometimes the prompts). Get to the secret sauce, or say plainly what stayed a black box — never guess it. The public web and any materials the user gave you fill the rest. If key surfaces sit behind a login, ask the user for access or screenshots — don't create accounts on someone else's product without their say-so.
+- Reverse-engineer it end to end: full feature surface, the core loop, pricing/tiers, data model — and the real mechanics underneath. Drive the live product headlessly (Playwright, or capture with `npx deepspace test screenshot <url> <out.png>`) and **watch the network traffic while you drive** — the API calls and request/response shapes reveal how it actually works (the pipeline, the providers, sometimes the prompts). Get to the secret sauce, or say plainly what stayed a black box — never guess it. The public web and any materials the user gave you fill the rest. If key surfaces sit behind a login, ask the user for access or screenshots — don't create accounts on someone else's product without their say-so.
 - **Save a reference corpus** — screenshots of every surface, notes, captures — in a stable folder (`docs/refs/` or similar). Every later phase diffs against this corpus; if you don't have enough screenshots, go take more.
 - Write findings into a small `docs/` wiki. Note where each claim came from, and mark inferences as hypotheses, never as facts.
 - Check what the platform already gives you (run the SKILL.md §3 catalogs; load the matching references) so you don't hand-build what exists. Nothing outside the catalogs is a blocker — any external API works with the user's own key (`npx deepspace secrets set KEY=…` → `references/secrets.md`). Note which capabilities come from SDK primitives, which from catalog integrations, and which you'll wire yourself — the wire-yourself ones are prime de-risking targets (step 4).
@@ -38,7 +38,7 @@ A vetted design is **copied, not "improved"** — idle edits are how good design
 For anything the app stands on that you haven't proven — a risky integration, the core generation/data pipeline, a cost assumption, a quality bar — run a small, timeboxed spike **before building the feature on top of it**. Prove the recipe with real calls and real output:
 
 ```bash
-npx deepspace invoke <provider>/<endpoint> --body '{...}'   # real call, real output, real cost
+npx deepspace integrations invoke <provider>/<endpoint> --body '{...}'   # real call, real output, real cost
 ```
 
 Let the result decide the design (`list`/`info` discovery is free; `invoke` is billed — stay inside any budget the user granted → `references/integrations.md`). Experiments are cheap; rebuilding a wrong foundation is not. If a load-bearing bet fails and there's no alternative, that's a stop-and-ask moment — never silently descope the core feature or ship a degraded stand-in.
@@ -54,10 +54,10 @@ Build order: shared foundation first (schemas, RBAC, worker routes, theme tokens
 `tsc` clean and passing tests say nothing about whether the app works or looks right — the classic failure is every automated gate green and the live app broken on the first click. Before calling anything done:
 
 1. **Type-check + tests** (`npx deepspace test`) — necessary, never sufficient.
-2. **Screenshot every screen** headlessly (`npx deepspace screenshot <url> <out.png>`) in the app's real themes and viewports — and *look at them*: overlap, misalignment, scaffold residue, empty states.
+2. **Screenshot every screen** headlessly (`npx deepspace test screenshot <url> <out.png>`) in the app's real themes and viewports — and *look at them*: overlap, misalignment, scaffold residue, empty states.
 3. **Diff against the design source** — side-by-side with the reference corpus or prototype, surface by surface.
 4. **Live-smoke the core loop on the deployed app** — drive it headlessly against the deploy, signed in as a fresh test account, and do the thing the app exists for, as a user would.
-5. **Multi-user features get multiple real sessions** (`npx deepspace test-accounts list`, a 2-user spec → `references/testing.md`) — never verify collaboration with a single tab.
+5. **Multi-user features get multiple real sessions** (`npx deepspace test accounts list`, a 2-user spec → `references/testing.md`) — never verify collaboration with a single tab.
 6. **Exercise the failure states** — denied, expired, empty, offline. A raw exception reaching a user is a defect.
 
 Report with evidence — the screenshot, the output, the live URL — and keep a hard line between **built-and-verified**, **built-but-unverified**, and **not built**. Never blur them. Assume the first pass is wrong and budget for verify-fix cycles; close the loop on a check that produces a real pass/fail, not on "looks done."

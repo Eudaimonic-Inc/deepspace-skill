@@ -146,7 +146,7 @@ Cost rollup multipliers live in `COST_RATES` (also exported from `deepspace/work
 
 ## Undeploy / cleanup
 
-`npx deepspace deploy` triggers provisioning. `npx deepspace undeploy` is the corresponding teardown:
+`npx deepspace deploy` triggers provisioning. `npx deepspace app undeploy` is the corresponding teardown:
 
 - **D1 / KV / Vectorize / Queues**: deleted via CF API and removed from the registry.
 - **R2 buckets**: deleted via CF API, but **non-empty buckets are skipped** (CF returns 409 / "not empty") to preserve user uploads. Clear the bucket manually if you want it gone with the app.

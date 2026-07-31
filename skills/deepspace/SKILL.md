@@ -23,8 +23,8 @@ Two hard gates come first: the user must be **logged in**, and the app must be *
 Every command that *runs* anything — `dev`, `test`, `deploy` — needs a signed-in DeepSpace account. There's no local-only mode: `dev` connects to deployed dev workers.
 
 ```bash
-npx deepspace whoami     # probe (--json for agents)
-npx deepspace login      # only if whoami says signed-out
+npx deepspace auth whoami     # probe (--json for agents)
+npx deepspace auth login      # only if whoami says signed-out
 ```
 
 `login` opens a browser OAuth tab and polls up to 10 minutes — **pause and let the user finish it at the keyboard.** Don't wrap it in `timeout` / `sleep` / `kill` (that aborts the OAuth poll), and don't ask for their password. One login covers every app on the machine. Full login + CLI contract → `references/cli.md`.
@@ -87,12 +87,14 @@ Records are envelopes — `{ recordId, data: T, createdBy, createdAt, updatedAt 
 npx deepspace test       # after runtime-affecting changes; multi-user features need a 2-user spec → references/testing.md
 npx deepspace deploy     # → <wrangler.name>.app.space
 npx deepspace deploy --env staging   # → isolated staging instance (v0.4+); rehearse risky changes first
-npx deepspace kill       # if your own dev port is stuck (never kill a sibling session's)
+npx deepspace dev kill   # if your own dev port is stuck (never kill a sibling session's)
 ```
 
-Deploy's subdomain is `wrangler.toml`'s `name`, not the folder. On a **first** deploy, clear the pre-deploy checklist in `references/uiux.md` §5 (real home replacing the placeholder stub, an own theme created — not `slate`/`paper`, no browser-default primitives). Deploy mechanics, the `.dev.vars` contract, secret handling, and **multi-env / staging (`--env`, incl. the client-`APP_NAME` sync gotcha)** → `references/deploy.md`. The full CLI catalog (`integrations`, `test-accounts`, `screenshot`, `domain`, `library`, dev/kill flags) → `references/cli.md`.
+Every app has a **built-in cloud git repo** (remote `space`) — the default VCS; don't set up GitHub unless asked. Deploy is **commit-first**: a dirty worktree is refused (`dirty_worktree`, exit 2), WIP belongs in commits on a `workspace` branch, and every deploy is a release you can `rollback` to. `npx deepspace status` re-orients you after any context loss. → `references/version-control.md`
 
-App secrets live in the platform's encrypted store, not in files: `npx deepspace secrets set KEY=value` — no setup step; worker code reads `env.KEY` in dev and prod alike, and the store (keyed by the app's immutable `DEEPSPACE_APP_ID` in `wrangler.toml`) is the **only** deploy input — never hand-edit `.dev.vars`. → `references/secrets.md`. The id is the app; the `name` is just the URL (renames, forking a cloned repo with `init --new-id`, ownership transfer → `references/app-identity.md`). Teammates the owner adds with `npx deepspace collaborators add <email>` can deploy the app and manage its secrets (not undeploy or transfer it). → `references/collaborators.md`.
+Deploy's subdomain is `wrangler.toml`'s `name`, not the folder. On a **first** deploy, clear the pre-deploy checklist in `references/uiux.md` §5 (real home replacing the placeholder stub, an own theme created — not `slate`/`paper`, no browser-default primitives). Deploy mechanics, the `.dev.vars` contract, secret handling, and **multi-env / staging (`--env`, incl. the client-`APP_NAME` sync gotcha)** → `references/deploy.md`. The full CLI catalog (`integrations`, `test accounts`, `test screenshot`, `app domain`, `app library`, dev/kill flags) → `references/cli.md`.
+
+App secrets live in the platform's encrypted store, not in files: `npx deepspace secrets set KEY=value` — no setup step; worker code reads `env.KEY` in dev and prod alike, and the store (keyed by the app's immutable `DEEPSPACE_APP_ID` in `wrangler.toml`) is the **only** deploy input — never hand-edit `.dev.vars`. → `references/secrets.md`. The id is the app; the `name` is just the URL (renames, forking a cloned repo with `init --new-id`, ownership transfer → `references/app-identity.md`). Teammates the owner adds with `npx deepspace app collaborators add <email>` can deploy the app and manage its secrets (not undeploy or transfer it). → `references/collaborators.md`.
 
 ## Load a reference when you reach its surface
 
@@ -101,7 +103,8 @@ Before editing files, scan this table and `Read` every row whose trigger matches
 | Reference | Read before |
 |---|---|
 | `references/workflow.md` | Starting an end-to-end app build — a new product, a clone, or any multi-feature request. |
-| `references/cli.md` | The login contract, the full CLI command catalog (`dev`/`kill`/`integrations`/`test-accounts`/`screenshot`/`library`), and the `test` command. |
+| `references/cli.md` | The login contract, the full CLI command catalog (the 16-command tree: `auth`/`app` groups, `dev kill`, `test accounts`/`screenshot`, `integrations`), and the `test` command. |
+| `references/version-control.md` | Committing / pushing / pulling app code, parallel work (`workspace`), a `dirty_worktree`/`behind_trunk`/`stale_base` refusal, undoing a deploy (`releases`/`rollback`), `activity`/`status`, or any mention of GitHub or remotes. |
 | `references/deploy.md` | Deploy mechanics, the `.dev.vars` contract, secret handling, and multi-environment / staging deploys (`deploy --env`). |
 | `references/secrets.md` | Managing app secrets, using `npx deepspace secrets`, migrating a legacy `.dev.vars` app, configs/environments, or generated-cache behavior. |
 | `references/app-identity.md` | App ids (`DEEPSPACE_APP_ID`), forking a cloned repo (`init --new-id`), renames, `apps`/`undeploy`, ownership transfer. |

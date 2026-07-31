@@ -40,7 +40,7 @@ Consequence: while editing in `.claude/worktrees/<name>`, `preview_start` launch
 Claude worktree detected — preview tool: use preview_start with name "wt-<name>" (port 51xx)
 ```
 
-Then call `preview_start` with `name: "wt-<name>"`. Stale `wt-*` entries whose worktree was deleted are pruned automatically on later `dev` runs. You can stop the CLI once the config is written — the preview tool starts its own server from the entry. `deepspace test` and `deepspace kill` resolve the same worktree port automatically, so tests target the worktree's server (not the main repo's) and kill stops the right one; `$DEEPSPACE_PORT` is ignored inside worktrees (a notice is printed) — pass `--port` to override.
+Then call `preview_start` with `name: "wt-<name>"`. Stale `wt-*` entries whose worktree was deleted are pruned automatically on later `dev` runs. You can stop the CLI once the config is written — the preview tool starts its own server from the entry. `deepspace test` and `deepspace dev kill` resolve the same worktree port automatically, so tests target the worktree's server (not the main repo's) and kill stops the right one; `$DEEPSPACE_PORT` is ignored inside worktrees (a notice is printed) — pass `--port` to override.
 
 **Older SDKs (manual):** add the entry to the main repo's `.claude/launch.json` yourself, on a port that doesn't collide with a main-repo server:
 

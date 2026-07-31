@@ -56,12 +56,12 @@ No separate dev server required either way — the scaffolded `tests/playwright.
 
 ### Screenshots (for visual debugging)
 
-`npx deepspace screenshot <url> <output>` takes a Playwright Chromium screenshot of any URL. Shares the same Playwright + chromium install as `npx deepspace test` — installs on first use if missing. Useful for "render the home page and show me what it looks like" workflows, and for capturing failure states without writing a one-off spec.
+`npx deepspace test screenshot <url> <output>` takes a Playwright Chromium screenshot of any URL. Shares the same Playwright + chromium install as `npx deepspace test` — installs on first use if missing. Useful for "render the home page and show me what it looks like" workflows, and for capturing failure states without writing a one-off spec.
 
 ```bash
-npx deepspace screenshot http://localhost:5173/ out.png
-npx deepspace screenshot http://localhost:5173/dashboard out.png --full-page
-npx deepspace screenshot http://localhost:5173/ out.png --wait-for-timeout 500
+npx deepspace test screenshot http://localhost:5173/ out.png
+npx deepspace test screenshot http://localhost:5173/dashboard out.png --full-page
+npx deepspace test screenshot http://localhost:5173/ out.png --wait-for-timeout 500
 ```
 
 This is a visual-inspection helper, not a substitute for Playwright assertions. Don't add it to the test checklist; do reach for it when an agent wants to confirm "what does this page actually render right now."
@@ -125,26 +125,26 @@ For a single-user signed-in test, use `newSignedInContext` from the escape hatch
 
 ## Authenticated tests — reuse the existing pool first
 
-Public signup is intentionally disabled. Tests sign in (not sign up) using credentials in `~/.deepspace/test-accounts.json` — populated via the `deepspace test-accounts` CLI and consumed automatically by the `users(N)` fixture from `'deepspace/testing'`.
+Public signup is intentionally disabled. Tests sign in (not sign up) using credentials in `~/.deepspace/test-accounts.json` — populated via the `deepspace test accounts` CLI and consumed automatically by the `users(N)` fixture from `'deepspace/testing'`.
 
 **The pool is global per developer with a hard cap of 10 accounts.** It is **not** scoped to one app. Apps share it. Treat the pool as a fixed resource — burning slots for "themed" accounts (`team-kanban-a@`, `pair-doc-alice@`, …) hits the cap within a few sessions and benefits nothing, since the apps don't care which test identity they get.
 
 **Before writing any spec that needs N signed-in users, in this order:**
 
-1. **Check what's there.** Run `npx deepspace test-accounts list` and count. If ≥ N, **stop here** — use them.
+1. **Check what's there.** Run `npx deepspace test accounts list` and count. If ≥ N, **stop here** — use them.
 2. **Use the fixture, not hardcoded emails.** `const [a, b] = await users(2)` picks the first N existing accounts; `await users(['Alice', 'Bob'])` picks specific ones by name. Either way, no creation happens. `pickTestAccounts(N)` does the same outside a fixture context.
 3. **Only create new accounts if `list` shows fewer than N**, and only as many as you actually need to reach N. Use the timestamped emails the SDK suggests (uniqueness is enforced at the auth-worker user table) — never bake the app name into the email.
 
-**The scaffolded `collab.spec.ts` ships with `await users(['Collab A', 'Collab B'])`.** If those names aren't in your local pool, the call throws `No test account named "Collab A"…` and the SDK's error message helpfully suggests `Create with: deepspace test-accounts create …`. **Don't follow that suggestion when your pool already has ≥ N accounts — it's the wrong fork.** The right fix is a one-token edit: change the call to `await users(2)`, which picks the first N accounts in the pool by `createdAt` regardless of name. Reserve the named form (`users(['Alice', 'Bob'])`) for tests that genuinely need specific identities — e.g., a feature whose behavior differs by user name or a fixture you're hand-curating across runs.
+**The scaffolded `collab.spec.ts` ships with `await users(['Collab A', 'Collab B'])`.** If those names aren't in your local pool, the call throws `No test account named "Collab A"…` and the SDK's error message helpfully suggests `Create with: deepspace test accounts create …`. **Don't follow that suggestion when your pool already has ≥ N accounts — it's the wrong fork.** The right fix is a one-token edit: change the call to `await users(2)`, which picks the first N accounts in the pool by `createdAt` regardless of name. Reserve the named form (`users(['Alice', 'Bob'])`) for tests that genuinely need specific identities — e.g., a feature whose behavior differs by user name or a fixture you're hand-curating across runs.
 
 ```bash
 # Only when the pool is genuinely below N:
-npx deepspace login   # if not already
-npx deepspace test-accounts create --email test-1-1776798210521@deepspace.test --password Pass123! --name "Test User 1"
-npx deepspace test-accounts create --email test-2-1776798210521@deepspace.test --password Pass123! --name "Test User 2"
+npx deepspace auth login   # if not already
+npx deepspace test accounts create --email test-1-1776798210521@deepspace.test --password Pass123! --name "Test User 1"
+npx deepspace test accounts create --email test-2-1776798210521@deepspace.test --password Pass123! --name "Test User 2"
 ```
 
-Credentials persist at `~/.deepspace/test-accounts.json` (mode 0600). Emails must end `@deepspace.test`. Run any creation in the same session — don't silently skip collab tests or punt with "requires manual QA." Run `npx deepspace test-accounts --help` for the full CLI (includes `delete --email`, `clear`, `clear --label e2e`, `clear --yes` for cleanup).
+Credentials persist at `~/.deepspace/test-accounts.json` (mode 0600). Emails must end `@deepspace.test`. Run any creation in the same session — don't silently skip collab tests or punt with "requires manual QA." Run `npx deepspace test accounts --help` for the full CLI (includes `delete --email`, `clear`, `clear --label e2e`, `clear --yes` for cleanup).
 
 ## Writing New Tests
 

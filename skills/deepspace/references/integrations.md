@@ -39,7 +39,7 @@ For Google OAuth specifics (per-user billing, scope step-up, `requiresOAuth` ret
 
 ## Testing — integration calls cost real money
 
-`npx deepspace test` and `api.spec.ts` runs hit the real third-party API through the proxy — `developer`-billed calls charge the CLI user (`npx deepspace whoami`), `user`-billed calls charge the signed-in test account. Keep integration assertions minimal: one `integration.post(...)` per endpoint per test run, not a matrix. Never put integration calls inside `for` loops, retry-until-success polls, or parameterized test generators.
+`npx deepspace test` and `api.spec.ts` runs hit the real third-party API through the proxy — `developer`-billed calls charge the CLI user (`npx deepspace auth whoami`), `user`-billed calls charge the signed-in test account. Keep integration assertions minimal: one `integration.post(...)` per endpoint per test run, not a matrix. Never put integration calls inside `for` loops, retry-until-success polls, or parameterized test generators.
 
 **Skip real `user`-billed endpoint calls in api.spec.ts.** Test accounts have no DeepSpace credits, so `user`-billed calls (e.g. `google/*`, or anything you've flipped to `'user'`) will 402 and the test will fail for the wrong reason. Don't "fix" this by temporarily flipping the integration to `'developer'` for tests — that silently bills the CLI user for calls the real app would have charged its end-users for, which is the opposite of what the developer chose.
 
@@ -59,7 +59,7 @@ The CLI is the agent-friendly source of truth — schemas come straight from the
 |---|---|---|---|
 | `deepspace integrations list` (= `invoke --list`) | **No** | Yes (catalog fetch) | Public catalog. Works on a fresh machine with no `~/.deepspace/session`. |
 | `deepspace integrations info <ep>` (= `invoke <ep> --info`) | **No** | Yes (catalog fetch) | Same — schemas + example body without login. |
-| `deepspace invoke <ep> --body` / `--body-file` | **Yes** (calls `ensureToken()`) | Yes | Actually calls the endpoint. Billed to the logged-in user. |
+| `deepspace integrations invoke <ep> --body` / `--body-file` | **Yes** (calls `ensureToken()`) | Yes | Actually calls the endpoint. Billed to the logged-in user. |
 
 ```bash
 # Discovery — no login needed. Run these first when scoping integration work.
@@ -69,12 +69,12 @@ npx deepspace integrations info <integration>/<endpoint> # schema + example body
 npx deepspace integrations info <integration>/<endpoint> --json
 
 # Actual calls — login required, billed to caller.
-npx deepspace invoke openai/chat-completion --body '{"model":"claude-sonnet-4-5","messages":[...]}'
-npx deepspace invoke openai/chat-completion --body-file req.json
-cat req.json | npx deepspace invoke openai/chat-completion --body-file -
+npx deepspace integrations invoke openai/chat-completion --body '{"model":"claude-sonnet-4-5","messages":[...]}'
+npx deepspace integrations invoke openai/chat-completion --body-file req.json
+cat req.json | npx deepspace integrations invoke openai/chat-completion --body-file -
 ```
 
-`deepspace invoke {--list, --info, <target> --body}` and `deepspace integrations {list, info, invoke}` are the same implementation under two parent names — pick whichever reads better in context.
+`integrations invoke --list` / `invoke <target> --info` are the same implementation as `integrations list` / `integrations info` — pick whichever reads better. (The old top-level `deepspace invoke` is gone: it exits 1 with `[renamed]`.)
 
 **This closes the body-shape discovery gap** — instead of guessing `{ ticker }` vs `{ symbol }` vs `{ q }` and round-tripping through the live endpoint, run `info` and get the exact required keys + an example. **And because `list` / `info` skip auth, an agent on a fresh box (no `~/.deepspace/session`, no app dir, no dev server) can probe the catalog before deciding whether to ask the user to log in.**
 

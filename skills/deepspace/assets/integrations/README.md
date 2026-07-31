@@ -1,13 +1,13 @@
 # `assets/integrations/` — endpoint catalog
 
-Hand-maintained YAML catalog of every endpoint exposed by the DeepSpace api-worker integration proxy. The skill body cross-references these files when a task involves `integration.post(...)`; agents normally reach them via the CLI (`npx deepspace integrations list / info`, `npx deepspace invoke --list / --info`) which prints the same data in JSON without burning context window.
+Hand-maintained YAML catalog of every endpoint exposed by the DeepSpace api-worker integration proxy. The skill body cross-references these files when a task involves `integration.post(...)`; agents normally reach them via the CLI (`npx deepspace integrations list / info`, `npx deepspace integrations invoke --list / --info`) which prints the same data in JSON without burning context window.
 
 ## File layout
 
 - `index.yaml` — flat catalog: every endpoint key + a one-line description. Use this to confirm a name exists or to look one up by topic. Includes `integration_count`, `endpoint_count`, `oauth_required_integrations`, and a `categories.<name>` block per integration with each endpoint's key + description.
 - `<integration>.yaml` (one per integration, 35 files) — full per-endpoint detail: HTTP method, endpoint key, description, input Zod schema (the same one the api-worker validates against), and any auth / billing notes.
 
-Load `index.yaml` first to confirm an endpoint name. Drill into `<integration>.yaml` only when the body shape is non-obvious or when `npx deepspace invoke <ep> --info` isn't an option (no network, agent in a closed sandbox, etc.).
+Load `index.yaml` first to confirm an endpoint name. Drill into `<integration>.yaml` only when the body shape is non-obvious or when `npx deepspace integrations invoke <ep> --info` isn't an option (no network, agent in a closed sandbox, etc.).
 
 ## Per-endpoint schema
 

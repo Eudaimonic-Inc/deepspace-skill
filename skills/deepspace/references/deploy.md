@@ -8,11 +8,11 @@ _Load this reference for deploy mechanics, the `.dev.vars` contract, and secret 
 npx deepspace deploy   # → <wrangler.name>.app.space
 ```
 
-The subdomain is the `name` field in `wrangler.toml`, **not** the app-folder name — edit it there if you want a different deploy target; `deploy` does not accept a name override. It must match `^[a-z0-9](?:-?[a-z0-9])+$` (2-63 chars, lowercase); `dev` and `deploy` fail-fast on a non-canonical name (see `references/architecture.md` § App-name rules). The app's *identity* is the immutable `DEEPSPACE_APP_ID` in `[vars]` (minted at scaffold, or on the spot by a first deploy — commit `wrangler.toml`); changing `name` on a deployed app is a **rename** the CLI asks you to confirm (or pass `--rename`) — data, secrets, collaborators, and custom domains follow the id. → `references/app-identity.md`. Deploy requires a logged-in session — re-run `npx deepspace login` if it expired (full login contract → `references/cli.md`).
+The subdomain is the `name` field in `wrangler.toml`, **not** the app-folder name — edit it there if you want a different deploy target; `deploy` does not accept a name override. It must match `^[a-z0-9](?:-?[a-z0-9])+$` (2-63 chars, lowercase); `dev` and `deploy` fail-fast on a non-canonical name (see `references/architecture.md` § App-name rules). The app's *identity* is the immutable `DEEPSPACE_APP_ID` in `[vars]` (minted at scaffold, or on the spot by a first deploy — commit `wrangler.toml`); changing `name` on a deployed app is a **rename** the CLI asks you to confirm (or pass `--rename`) — data, secrets, collaborators, and custom domains follow the id. → `references/app-identity.md`. Deploy requires a logged-in session — re-run `npx deepspace auth login` if it expired (full login contract → `references/cli.md`).
 
 **Adoption on a repo with no `DEEPSPACE_APP_ID`.** A first deploy resolves the subdomain against the registry. If the name is free it mints a fresh id; if the name belongs to an app you **own**, it adopts that id automatically. If the name belongs to an app you can *deploy but don't own* (collaborator/admin on-behalf), deploy asks you to confirm before adopting — or requires `--adopt` in a non-TTY/CI run. A name owned by an app you **can't** deploy fails up front (pick a different `name`, or ask the owner to add you as a collaborator).
 
-You don't have to own the app: a **collaborator** the owner added (`npx deepspace collaborators add <email>`) deploys the same way — the CLI prints `Deployed on behalf of owner <id>` and ownership/billing stay the owner's. Collaborators cannot `undeploy`. → `references/collaborators.md`
+You don't have to own the app: a **collaborator** the owner added (`npx deepspace app collaborators add <email>`) deploys the same way — the CLI prints `Deployed on behalf of owner <id>` and ownership/billing stay the owner's. Collaborators cannot `undeploy`. → `references/collaborators.md`
 
 On an **initial build**, run the pre-deploy checklist in `references/uiux.md` §5 first (home replaced, theme picked, browser-default primitives removed, toasts wired). On follow-up deploys with those already verified, just run the command.
 
@@ -48,7 +48,7 @@ The file holds a live `APP_OWNER_JWT` (signed against the user's identity) plus 
 npx deepspace deploy --env staging   # deploys the [env.staging] block
 ```
 
-`--env <name>` deploys a named `[env.<name>]` wrangler block to its own subdomain with its own isolated Durable Objects — use it to rehearse risky changes (schema migrations, bulk imports, destructive backfills) before production. Omit `--env` to deploy the top-level config. The build runs with `CLOUDFLARE_ENV=<name>`, so the Cloudflare Vite plugin applies that env's overrides. Each `[env.<name>]` block is its **own app**: it gets its own `DEEPSPACE_APP_ID` (minted on its first deploy, or `deepspace init --env <name>`) and therefore its own secrets store — that env's deploys ship config `<name>` of that store (`-e <name>` on `secrets` commands targets it; seeding from production → `references/secrets.md` § Configs). DeepSpace still uses a single generated `.dev.vars` cache across envs.
+`--env <name>` deploys a named `[env.<name>]` wrangler block to its own subdomain with its own isolated Durable Objects — use it to rehearse risky changes (schema migrations, bulk imports, destructive backfills) before production. Omit `--env` to deploy the top-level config. The build runs with `CLOUDFLARE_ENV=<name>`, so the Cloudflare Vite plugin applies that env's overrides. Each `[env.<name>]` block is its **own app**: it gets its own `DEEPSPACE_APP_ID` (minted on its first deploy, or `deepspace app init --env <name>`) and therefore its own secrets store — that env's deploys ship config `<name>` of that store (`-e <name>` on `secrets` commands targets it; seeding from production → `references/secrets.md` § Configs). DeepSpace still uses a single generated `.dev.vars` cache across envs.
 
 Two rules the CLI fail-fasts on:
 
@@ -74,4 +74,4 @@ export default defineConfig({ define: { 'import.meta.env.VITE_APP_ID': JSON.stri
 
 **Staging-only worker routes** (a temporary import/admin endpoint, extra debug surface) should gate on `env.APP_NAME.includes('staging')` (or the presence of a staging-only secret) so the same `worker.ts` exposes them on staging but 404s in production.
 
-**Tear-down:** `npx deepspace undeploy --env staging` removes the staging app (same `--env` flag).
+**Tear-down:** `npx deepspace app undeploy --env staging` removes the staging app (same `--env` flag).

@@ -1,8 +1,8 @@
 # Custom Domains — buy, attach, manage
 
-Load this reference when a user asks to point a real domain (e.g., `myapp.com`) at a deployed DeepSpace app, when extending or scripting the `deepspace domain` CLI from an agent, or when debugging "the domain bought but nothing resolves yet" issues. Skip it for apps that are happy on `<name>.app.space`.
+Load this reference when a user asks to point a real domain (e.g., `myapp.com`) at a deployed DeepSpace app, when extending or scripting the `deepspace app domain` CLI from an agent, or when debugging "the domain bought but nothing resolves yet" issues. Skip it for apps that are happy on `<name>.app.space`.
 
-The `deepspace domain` CLI is **agent-friendly by design** — destructive commands take `--yes` to skip prompts, most read commands take `--json` for structured stdout (`search`, `buy`, `list`, `status`, `attach` — `detach` and `renew` do not), and `--app` defaults to the current `wrangler.toml`'s `name` field (matches `deepspace deploy`).
+The `deepspace app domain` CLI is **agent-friendly by design** — destructive commands take `--yes` to skip prompts, most read commands take `--json` for structured stdout (`search`, `buy`, `list`, `status`, `attach` — `detach` and `renew` do not), and `--app` defaults to the current `wrangler.toml`'s `name` field (matches `deepspace deploy`).
 
 ## Model
 
@@ -19,40 +19,40 @@ The `deepspace domain` CLI is **agent-friendly by design** — destructive comma
 
 ```bash
 # Find available domains and prices
-npx deepspace domain search <query>              # human table
-npx deepspace domain search <query> --json       # machine-readable
-npx deepspace domain search <query> --limit 25
+npx deepspace app domain search <query>              # human table
+npx deepspace app domain search <query> --json       # machine-readable
+npx deepspace app domain search <query> --limit 25
 
 # Buy a domain via Stripe Checkout (browser opens)
-npx deepspace domain buy <domain>                          # opens browser, polls until live
-npx deepspace domain buy <domain> --app <name> --yes       # skip the "are you sure" prompt
-npx deepspace domain buy <domain> --no-open                # print the Stripe URL instead of opening
-npx deepspace domain buy <domain> --no-wait                # exit after Checkout session is created
-npx deepspace domain buy <domain> --json                   # JSON to stdout (combine with --no-wait for headless)
+npx deepspace app domain buy <domain>                          # opens browser, polls until live
+npx deepspace app domain buy <domain> --app <name> --yes       # skip the "are you sure" prompt
+npx deepspace app domain buy <domain> --no-open                # print the Stripe URL instead of opening
+npx deepspace app domain buy <domain> --no-wait                # exit after Checkout session is created
+npx deepspace app domain buy <domain> --json                   # JSON to stdout (combine with --no-wait for headless)
 
 # List domains you own
-npx deepspace domain list
-npx deepspace domain list --json
+npx deepspace app domain list
+npx deepspace app domain list --json
 
 # Detail view for one domain — registrar status, hostname status, expiry, errors
-npx deepspace domain status <domain>
-npx deepspace domain status <domain> --json
+npx deepspace app domain status <domain>
+npx deepspace app domain status <domain> --json
 
 # Re-point a domain at a different app (renames don't need this — domains follow the app id)
-npx deepspace domain attach <domain> --app <new-app-name>
-npx deepspace domain attach <domain> --app <new-app-name> --json
+npx deepspace app domain attach <domain> --app <new-app-name>
+npx deepspace app domain attach <domain> --app <new-app-name> --json
 
 # Stop routing the domain (keeps the registration; user keeps owning it; auto-renew unchanged)
-npx deepspace domain detach <domain> --yes
+npx deepspace app domain detach <domain> --yes
 
 # Toggle auto-renew at the registrar
-npx deepspace domain renew <domain> --auto on
-npx deepspace domain renew <domain> --auto off
+npx deepspace app domain renew <domain> --auto on
+npx deepspace app domain renew <domain> --auto off
 ```
 
 ## When the agent should pause and tell the user
 
-`deepspace domain buy` opens a Stripe Checkout tab. The user must complete payment in the browser before the CLI's polling can succeed. Two rules:
+`deepspace app domain buy` opens a Stripe Checkout tab. The user must complete payment in the browser before the CLI's polling can succeed. Two rules:
 
 1. **Tell the user a payment is required before running `buy`** — the same way the skill treats interactive `login`. They need to be at the keyboard.
 2. **Don't wrap `buy` in `timeout N` or any cutoff.** The CLI polls for **5 minutes on Cloudflare-registered TLDs** and **60 minutes on Porkbun TLDs** — an artificial cutoff aborts before payment + provisioning finish. Use `--no-wait` if you genuinely want a fire-and-forget mode (you'll need to call `domain status` later). Even without `--no-wait`, Ctrl-C is safe — provisioning continues server-side regardless.
@@ -61,7 +61,7 @@ For non-interactive CI, prefer `domain attach` (re-pointing an already-bought do
 
 ## Defaults that bite
 
-- **`--app` defaults to `./wrangler.toml`'s `name` field.** If you run `deepspace domain buy myapp.com` outside an app dir without `--app`, the CLI errors with `No app specified. Pass --app <name>, or run from an app directory with a wrangler.toml.` Stay inside the app directory or pass `--app` explicitly.
+- **`--app` defaults to `./wrangler.toml`'s `name` field.** If you run `deepspace app domain buy myapp.com` outside an app dir without `--app`, the CLI errors with `No app specified. Pass --app <name>, or run from an app directory with a wrangler.toml.` Stay inside the app directory or pass `--app` explicitly.
 - **Renewal price is usually but not always equal to registration price.** `chargedCents` in `list` / `status` output is the price you paid this year. The pricing object exposes separate `registrationCost` / `renewalCost`; for non-premium TLDs they match, but premium domains can have introductory pricing that resets at renewal — read `domain status` output before assuming.
 - **Detach is reversible; releasing the registration is not.** `detach` only stops routing (`DELETE /api/domains/:id` keeps the registration on file). The user keeps owning the domain and can re-attach later, or stop auto-renew with `renew --auto off`. There is no `domain release` / `domain transfer` subcommand — registrar-side transfers go through the registrar's own portal.
 - **Non-TTY safety on `confirm`.** `domain buy` and `domain detach` refuse to run without `--yes` when stdin isn't a TTY (piped, agent context). The error message is explicit: `… — pass --yes to confirm non-interactively`. Always include `--yes` when invoking from a script or agent.
