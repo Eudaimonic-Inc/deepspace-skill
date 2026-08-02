@@ -60,7 +60,7 @@ Core records are envelopes (`recordId`, `data`, metadata); fields live under `.d
 
 ```ts
 const { records } = useQuery<Item>('items', { where: { status: 'published' } })
-const { create, put, remove } = useMutations<Item>('items')
+const { createConfirmed, putConfirmed, removeConfirmed } = useMutations<Item>('items')
 const { isSignedIn, isLoaded } = useAuth()
 ```
 
