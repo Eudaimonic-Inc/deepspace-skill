@@ -2,11 +2,11 @@
 
 Load this reference when writing or updating a Playwright test, when the `users` fixture errors with missing accounts, when a test fails and you need to decide how to diagnose, or when extending `smoke.spec.ts` / `api.spec.ts` / `collab.spec.ts` / per-feature specs. Skip it for conversation, planning, code-reading, or code changes whose runtime behavior is already covered by an existing test.
 
-This file is canonical for the test extension checklist (the Step 8 rules below), the helpers, auth setup, cleanup conventions, route coverage, multi-user patterns, and self-diagnosis. `SKILL.md` links here.
+This file is canonical for the extension checklist below, helpers, auth setup, cleanup, route coverage, multi-user patterns, and diagnosis.
 
 Every scaffolded app includes Playwright tests in `tests/` with helpers for auth, error tracking, and multi-user flows. Use these tests to verify your work — don't rely on manual testing or console logs to debug issues.
 
-## Step 8 extension checklist
+## Extension checklist
 
 **Run tests only after a runtime-affecting code change** (`src/`, `worker.ts`, etc.). Skip them for conversation, planning, reading, or pure documentation edits — don't run as a ritual.
 
@@ -26,7 +26,7 @@ Every scaffolded app includes Playwright tests in `tests/` with helpers for auth
 - **All tests use real services** — never mock internal hooks.
 - **Debug from failures, not console logs.** Read the assertion + selector, fix the code. Don't add `console.log` to diagnose — write a more specific assertion. Don't weaken or delete tests to make them green.
 - **Re-run after each follow-up change.** Re-apply the checklist; tests are a living contract.
-- **Tests are code, so they live where the code lives** — the same workspace branch as the change they cover, committed alongside it (`references/version-control.md`). A spec is not a scratch artifact: don't leave it uncommitted, don't land the feature and follow up with the test later, and don't park test work on trunk while the feature sits on a workspace. Deploy refuses a dirty worktree anyway, so an uncommitted spec will block the ship it was written to justify.
+- Commit tests with the behavior they cover; do not defer them to another line of work.
 
 Skipping the checklist when its conditions fire is the most common cause of "I built it but it crashes on page load" handoffs and "looks fine for me, broken for the second user" regressions.
 
@@ -37,14 +37,14 @@ Two paths — pick based on what you're doing:
 ```bash
 # Official entry point. Auto-installs Playwright + chromium on first run, writes
 # .dev.vars against dev workers, forwards $DEEPSPACE_PORT to the Playwright child.
-npx deepspace test                    # default = smoke + api
-npx deepspace test smoke              # smoke only
-npx deepspace test api                # api only
-npx deepspace test e2e                # all Playwright specs
-npx deepspace test unit               # vitest unit tests
-npx deepspace test all                # vitest + Playwright
-npx deepspace test tests/foo.spec.ts  # one file
-npx deepspace test --port 5180        # match a parallel `deepspace dev --port 5180`
+npx deepspace test run                    # default = smoke + api
+npx deepspace test run smoke              # smoke only
+npx deepspace test run api                # api only
+npx deepspace test run e2e                # all Playwright specs
+npx deepspace test run unit               # vitest unit tests
+npx deepspace test run all                # vitest + Playwright
+npx deepspace test run tests/foo.spec.ts  # one file
+npx deepspace test run --port 5180        # match `deepspace dev start --port 5180`
 
 # Plain Playwright. Works once chromium is installed; no .dev.vars regeneration,
 # no APP_OWNER_JWT mint. Use it to iterate on a single spec or run with custom flags.
@@ -57,7 +57,7 @@ No separate dev server required either way — the scaffolded `tests/playwright.
 
 ### Screenshots (for visual debugging)
 
-`npx deepspace test screenshot <url> <output>` takes a Playwright Chromium screenshot of any URL. Shares the same Playwright + chromium install as `npx deepspace test` — installs on first use if missing. Useful for "render the home page and show me what it looks like" workflows, and for capturing failure states without writing a one-off spec.
+`npx deepspace test screenshot <url> <output>` is a small visual-inspection helper that shares Playwright's install. Use it for targeted layout/debug checks, not as a substitute for assertions or a mandatory sweep.
 
 ```bash
 npx deepspace test screenshot http://localhost:5173/ out.png
@@ -73,7 +73,7 @@ This is a visual-inspection helper, not a substitute for Playwright assertions. 
 - `api.spec.ts` — API endpoints return expected responses, auth required where expected
 - `collab.spec.ts` — multi-user: two users connect, see each other, data syncs between them
 
-These three files are where every test lives. Installing a feature (e.g., `docs`, `kanban`, `messaging`) does not add a new spec file — extend these three per the Step 8 checklist in `SKILL.md`.
+These three files are where every test lives. Installing a feature extends them rather than creating one spec per catalog block.
 
 ## Two layers of helpers
 
@@ -168,7 +168,7 @@ test("user A's action appears for user B", async ({ users }) => {
 
 ## Test data cleanup — tests must not pollute the dev DB
 
-Tests run against the same local Durable Object the dev server uses, so any records a test creates will still be visible in `npx deepspace dev` afterwards. That's a problem once the app has real data.
+Tests run against the same local Durable Object the dev server uses, so any records a test creates will still be visible in `npx deepspace dev start` afterwards. That's a problem once the app has real data.
 
 **Convention every test must follow:**
 
@@ -248,29 +248,4 @@ await expect.poll(
 ).toBe('false')
 ```
 
-Same race applies to any `useYjsRoom` / `useCanvas` / `useGameRoom` / `useCronMonitor` UI gated by `canWrite` — if the test wants to assert a writer can act before clicking, poll the gate's DOM signal (a disabled-state attribute, `aria-readonly`, or `contenteditable`) instead of relying on actionability checks.
-
-## Proactive Test Authoring
-
-Write and update tests **as you build**, not after. The Step 8 checklist in `SKILL.md` is the canonical trigger list — each rule names a condition on the code and a required test file. Don't duplicate those rules here; instead, treat this section as the worked-example elaboration:
-
-- **New page / route / nav item** → `smoke.spec.ts`. Navigate to the page, assert the expected headline/components are visible, page has no errors. Dynamic routes (`/polls/:id`) need real-content assertions against a created record — see "Route coverage" below.
-- **New CRUD feature** (items, posts, whatever — anything backed by a new schema) → `smoke.spec.ts` with a create → read → edit → delete happy path for a signed-in user.
-- **New worker route, server action, AI chat route, cron handler, any `integration.post(...)` call, or any UI that relies on an HTTP-enforced auth/role check (e.g., an admin-only action button calling `/api/actions/<name>`, even when the route itself is pre-existing)** → `api.spec.ts`. For integration calls, POST to `/api/integrations/<endpoint>` and assert the envelope is `success: true` with the data the UI consumes — this catches wrong endpoint names, the most common integration-heavy-app failure. For routes/actions/AI/cron, assert status codes, response shape, and auth gating — including the negative path (unauthenticated or wrong-role caller gets 401/403) and other error cases (bad input, missing resources).
-- **New multi-user behavior** — any schema with shared/public/team/own permissions or a `visibilityField`, or any call to `useYjs*`, `useMessages`, `useReactions`, `usePresence`, `useCanvas`, or shared scopes → `collab.spec.ts`. Open two users with the SDK fixture (`const [a, b] = await users(2)` after `import { test, expect } from 'deepspace/testing'`), act in one, assert in the other. This is the rule that catches "works for me, broken for the second user" regressions — do not skip it because the prompt didn't say "multi-user."
-- **RBAC changes or permission tweaks** → `collab.spec.ts` with users of different roles, asserting what each can and cannot see/do.
-- **Bug fix** → write the failing test first (reproducing the bug), then fix the code until it passes. Leave the test in the suite.
-
-When the user asks for a change in a follow-up message, re-apply the Step 8 checklist to the new change and update the tests in the same turn — don't let them drift. The test suite is a living contract.
-
-## Self-Diagnosis with Tests
-
-When something isn't working, do **not** start with console logs. Start with:
-1. Write (or tighten) a test that expresses the expected behavior.
-2. Run it. Read the failure message and the failing selector/assertion.
-3. Fix the code until the test passes.
-4. Leave the test in place — it now guards against regression.
-
-Console logs are a last resort, not a first step. A failing test tells you more than a log ever will: what was expected, what was observed, where in the flow it diverged. If a test is flaky or passes locally but fails in CI, investigate the flake — do not mark it `.skip` or delete it.
-
-Don't make the user do the agent's debugging — having them click around the app and paste console output is not a substitute for running a Playwright test. Reach for that path only after a test has genuinely failed to reproduce the bug, and say so explicitly when you do.
+Same race applies to any `useYjsRoom` / `useCanvas` / `useGameRoom` / `useCronMonitor` UI gated by `canWrite`: poll the gate's DOM attribute rather than starving its WebSocket callback with an actionability check.

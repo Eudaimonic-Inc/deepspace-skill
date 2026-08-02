@@ -39,7 +39,7 @@ For Google OAuth specifics (per-user billing, scope step-up, `requiresOAuth` ret
 
 ## Testing — integration calls cost real money
 
-`npx deepspace test` and `api.spec.ts` runs hit the real third-party API through the proxy — `developer`-billed calls charge the CLI user (`npx deepspace auth whoami`), `user`-billed calls charge the signed-in test account. Keep integration assertions minimal: one `integration.post(...)` per endpoint per test run, not a matrix. Never put integration calls inside `for` loops, retry-until-success polls, or parameterized test generators.
+`npx deepspace test run` and `api.spec.ts` runs hit the real third-party API through the proxy — `developer`-billed calls charge the CLI user (`npx deepspace auth whoami`), `user`-billed calls charge the signed-in test account. Keep integration assertions minimal: one `integration.post(...)` per endpoint per test run, not a matrix. Never put integration calls inside `for` loops, retry-until-success polls, or parameterized test generators.
 
 **Skip real `user`-billed endpoint calls in api.spec.ts.** Test accounts have no DeepSpace credits, so `user`-billed calls (e.g. `google/*`, or anything you've flipped to `'user'`) will 402 and the test will fail for the wrong reason. Don't "fix" this by temporarily flipping the integration to `'developer'` for tests — that silently bills the CLI user for calls the real app would have charged its end-users for, which is the opposite of what the developer chose.
 

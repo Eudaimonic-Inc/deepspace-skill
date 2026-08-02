@@ -1,10 +1,10 @@
 # Claude Preview Tool — launch.json & the worktree trap
 
-Load this reference when using the Claude desktop preview tool (`preview_start` / `preview_*`) with a DeepSpace app — especially when the preview shows stale code, your edits never appear in the served page, or you are working inside a `.claude/worktrees/<name>` git worktree. Skip it if you're driving the dev server yourself with `npx deepspace dev` and a browser.
+Load this reference when using the Claude desktop preview tool (`preview_start` / `preview_*`) with a DeepSpace app — especially when the preview shows stale code, your edits never appear in the served page, or you are working inside a `.claude/worktrees/<name>` git worktree. Skip it if you're driving the dev server yourself with `npx deepspace dev start` and a browser.
 
 ## How the preview tool finds a DeepSpace app
 
-The preview tool starts dev servers from configs in `.claude/launch.json`. Both the scaffolder and `npx deepspace dev` seed an app-local one automatically:
+The preview tool starts dev servers from configs in `.claude/launch.json`. Both the scaffolder and `npx deepspace dev start` seed an app-local one automatically:
 
 ```json
 {
@@ -34,13 +34,13 @@ Consequence: while editing in `.claude/worktrees/<name>`, `preview_start` launch
 
 ## Fix
 
-**Current SDK (automatic):** run `npx deepspace dev` once from inside the worktree. It detects the `.claude/worktrees/<name>` layout and upserts a `wt-<name>` entry into the **main repo's** launch.json, pinned to the worktree via `cwd` on a stable per-worktree port (5180–5199, bumped past ports other entries already claim; an explicit `--port` is used verbatim). The dev run itself binds that same port, and `--prod`/`--env` flags are preserved in the entry. It prints the entry name:
+**Current SDK (automatic):** run `npx deepspace dev start` once from inside the worktree. It detects the `.claude/worktrees/<name>` layout and upserts a `wt-<name>` entry into the **main repo's** launch.json, pinned to the worktree via `cwd` on a stable per-worktree port (5180–5199, bumped past ports other entries already claim; an explicit `--port` is used verbatim). The dev run itself binds that same port, and `--prod`/`--env` flags are preserved in the entry. It prints the entry name:
 
 ```
 Claude worktree detected — preview tool: use preview_start with name "wt-<name>" (port 51xx)
 ```
 
-Then call `preview_start` with `name: "wt-<name>"`. Stale `wt-*` entries whose worktree was deleted are pruned automatically on later `dev` runs. You can stop the CLI once the config is written — the preview tool starts its own server from the entry. `deepspace test` and `deepspace dev kill` resolve the same worktree port automatically, so tests target the worktree's server (not the main repo's) and kill stops the right one; `$DEEPSPACE_PORT` is ignored inside worktrees (a notice is printed) — pass `--port` to override.
+Then call `preview_start` with `name: "wt-<name>"`. Stale `wt-*` entries whose worktree was deleted are pruned automatically on later `dev` runs. You can stop the CLI once the config is written — the preview tool starts its own server from the entry. `deepspace test run` and `deepspace dev kill` resolve the same worktree port automatically, so tests target the worktree's server (not the main repo's) and kill stops the right one; `$DEEPSPACE_PORT` is ignored inside worktrees (a notice is printed) — pass `--port` to override.
 
 **Older SDKs (manual):** add the entry to the main repo's `.claude/launch.json` yourself, on a port that doesn't collide with a main-repo server:
 

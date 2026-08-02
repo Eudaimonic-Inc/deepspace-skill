@@ -15,8 +15,8 @@ The id **is** the app: data, secrets, collaborators, billing, and custom domains
 
 - `npm create deepspace` mints one into the scaffold.
 - `deepspace deploy` in a repo without one mints it on the spot and writes it to `wrangler.toml` (commit that change).
-- `deepspace app init` stamps one into an existing repo explicitly; `deepspace app init --new-id` **forks**: same code, brand-new app — fresh data, fresh secrets store, fresh URL; the original app is untouched. Use it when you clone another app's repo and want your own. A deploy or secrets write failing with *"This app id is registered to another user"* means run it.
-- Each `[env.<name>]` block is its **own app** with its own id (`init --env <name>`, or minted on that env's first deploy).
+- `deepspace app init` stamps one into an existing repo explicitly. `deepspace app init --new-id` writes a new id for a fork: same code, separate data and secrets. It does not change Wrangler's `name` or reserve a new URL; choose the fork's name separately before deploy. Use it when a cloned repo still identifies another user's app.
+- Each `[env.<name>]` block is its **own app** with its own id (`deepspace app init --env <name>`, or minted on that env's first deploy).
 
 ## Renames
 

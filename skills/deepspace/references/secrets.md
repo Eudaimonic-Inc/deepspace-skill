@@ -18,7 +18,7 @@ One hygiene caveat, not a blocker: the value lands in the command (shell history
 
 ```bash
 npx deepspace secrets set API_KEY=sk_test_...   # works even pre-deploy (first write registers the app id to you)
-npx deepspace dev                                # regenerates the cache; worker sees env.API_KEY
+npx deepspace dev start                         # regenerates the cache; worker sees env.API_KEY
 ```
 
 Two propagation rules the CLI reminds you of: a **deployed** app picks up changes only at the next `deploy` (bindings are set at deploy time), and a **running** `dev` session only on restart (the cache regenerates at startup, not mid-session).

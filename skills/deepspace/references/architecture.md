@@ -45,7 +45,7 @@ The scaffolded `/ws/:roomId` handler routes **every** scope to the app's own `RE
 
 ### 1. Add the service binding to `wrangler.toml` (production)
 
-The scaffold declares `PLATFORM_WORKER?: Fetcher` (and `PLATFORM_WORKER_URL?: string`) in the `Env` interface but does not ship the wrangler binding. Cross-worker calls over plain `*.workers.dev` URLs return Cloudflare error 1042 in production, so the service binding is the only working transport for deployed apps. The `PLATFORM_WORKER_URL` fallback that `deepspace dev` writes into `.dev.vars` is a dev-only convenience — adequate for `wrangler dev`, never enough for prod.
+The scaffold declares `PLATFORM_WORKER?: Fetcher` (and `PLATFORM_WORKER_URL?: string`) in the `Env` interface but does not ship the wrangler binding. Cross-worker calls over plain `*.workers.dev` URLs return Cloudflare error 1042 in production, so the service binding is the only working transport for deployed apps. The `PLATFORM_WORKER_URL` fallback that `deepspace dev start` writes into `.dev.vars` is a dev-only convenience — adequate for `wrangler dev`, never enough for prod.
 
 ```toml
 [[services]]
@@ -91,7 +91,7 @@ The client SDK no longer sends identity params over WS URLs — the worker would
 
 ## App-name rules
 
-The `name` field in `wrangler.toml` is the `<name>.app.space` subdomain. It must match `^[a-z0-9](?:-?[a-z0-9])+$` — lowercase, 2-63 chars, no leading / trailing / double dashes. **Both `deepspace dev` and `deepspace deploy` fail-fast on a non-canonical `name`** — for example, `name = "My_App"` bails with:
+The `name` field in `wrangler.toml` is the `<name>.app.space` subdomain. It must match `^[a-z0-9](?:-?[a-z0-9])+$` — lowercase, 2-63 chars, no leading / trailing / double dashes. **Both `deepspace dev start` and `deepspace deploy` fail-fast on a non-canonical `name`** — for example, `name = "My_App"` bails with:
 
 ```
 wrangler.toml: `name` "My_App" is not in canonical form. Update it to "my-app" and re-run.
@@ -118,4 +118,4 @@ Each helper throws an actionable Error if neither transport is configured. See `
 - Schemas baked in at deploy time — no runtime schema loading.
 - Direct WebSocket per scope — no mux/gateway.
 - No user-scope DOs — user-scoped data lives in app DOs with RBAC filtering.
-- **Use `npx deepspace dev`** for local dev — never run `wrangler dev` + `vite dev` separately. The CLI's combined runner is what writes `.dev.vars` (with a freshly-minted `APP_OWNER_JWT`) and routes the app through the Cloudflare Vite plugin so service bindings, DO classes, and WebSocket routes all resolve in-process.
+- **Use `npx deepspace dev start`** for local dev — never run `wrangler dev` + `vite dev` separately. The CLI's combined runner is what writes `.dev.vars` (with a freshly-minted `APP_OWNER_JWT`) and routes the app through the Cloudflare Vite plugin so service bindings, DO classes, and WebSocket routes all resolve in-process.
