@@ -203,7 +203,7 @@ Before declaring done, run both halves:
 
 ```bash
 # Half 1 — ABSENCE: any hit below means the app is NOT ready
-grep -rn "<select\|window\.confirm\|window\.alert\|window\.prompt" src/
+grep -REn '<select|(^|[^[:alnum:]_.])(window\.)?(confirm|alert|prompt)[[:space:]]*\(' src/
 grep -rn "placeholder page\|Your app goes here" src/
 grep -rn 'data-theme="slate"' index.html
 
