@@ -1,4 +1,4 @@
-_Load this reference when working with app ids (`DEEPSPACE_APP_ID`), forking a cloned repo (`init --new-id`), renaming an app, listing your apps (`apps`), undeploying, or transferring ownership._
+_Load this reference when working with app ids (`DEEPSPACE_APP_ID`), forking a cloned repo (`app init --new-id`), renaming an app, listing your apps (`app list`), undeploying, or transferring ownership._
 
 # App identity: ids, names, renames, transfers
 
@@ -15,8 +15,8 @@ The id **is** the app: data, secrets, collaborators, billing, and custom domains
 
 - `npm create deepspace` mints one into the scaffold.
 - `deepspace deploy` in a repo without one mints it on the spot and writes it to `wrangler.toml` (commit that change).
-- `deepspace init` stamps one into an existing repo explicitly; `deepspace init --new-id` **forks**: same code, brand-new app — fresh data, fresh secrets store, fresh URL; the original app is untouched. Use it when you clone another app's repo and want your own. A deploy or secrets write failing with *"This app id is registered to another user"* means run it.
-- Each `[env.<name>]` block is its **own app** with its own id (`init --env <name>`, or minted on that env's first deploy).
+- `deepspace app init` stamps one into an existing repo explicitly. `deepspace app init --new-id` writes a new id for a fork: same code, separate data and secrets. It does not change Wrangler's `name` or reserve a new URL; choose the fork's name separately before deploy. Use it when a cloned repo still identifies another user's app.
+- Each `[env.<name>]` block is its **own app** with its own id (`deepspace app init --env <name>`, or minted on that env's first deploy).
 
 ## Renames
 
@@ -25,14 +25,14 @@ Change `name` in `wrangler.toml` and deploy; the CLI asks you to confirm (or pas
 ## Listing, undeploy, revival
 
 ```bash
-npx deepspace apps                    # every app registered to you: id, URL, deploy state (--json)
-npx deepspace undeploy [--env <name>] # off the network; deletes stored data
-npx deepspace undeploy <app-id-or-name> # positional target (registry-resolved) — works from anywhere, no wrangler.toml needed
+npx deepspace app list                    # every app registered to you: id, URL, deploy state (--json)
+npx deepspace app undeploy [--env <name>] # take down the Worker, routes, and provisioned resources
+npx deepspace app undeploy <app-id-or-name> # positional target (registry-resolved) — works from anywhere, no wrangler.toml needed
 ```
 
 The positional form takes an app id **or** a live subdomain name (resolved via the registry), so you can undeploy an app you've lost track of without being in its checkout. Omit it to fall back to `DEEPSPACE_APP_ID` from the nearest `wrangler.toml` (with `--env <name>` selecting that env's app; a positional name overrides `--env`).
 
-`undeploy` deletes the app's stored data but the id survives — deploying again revives the same app (same collaborators, same secrets store), and within 30 days the old name is still yours. Active (deployed) apps count against your tier's cap; undeployed ones don't, and revival is quota-checked like a fresh deploy. `apps` is the answer to "which app do I undeploy?" when a quota message names an id you've lost track of.
+`undeploy` removes the Worker and releases its routes, then best-effort deletes recorded auto-provisioned Cloudflare resources; data in those resources can be lost. The app id, registry identity, collaborators, secret store, and cloud repo remain, so a later deploy revives that identity. Active apps count against the tier cap; undeployed ones do not, and revival is quota-checked. Use `app list` when a quota refusal names an app you no longer recognize.
 
 ## Ownership transfer
 
@@ -40,12 +40,12 @@ GitHub-style two-step handshake — nothing changes until the recipient accepts:
 
 ```bash
 # Owner:
-npx deepspace transfer offer teammate@acme.com   # 7-day offer; --replace swaps a pending one
-npx deepspace transfer status
-npx deepspace transfer cancel
+npx deepspace app transfer offer teammate@acme.com   # 7-day offer; --replace swaps a pending one
+npx deepspace app transfer status
+npx deepspace app transfer cancel
 
 # Recipient:
-npx deepspace transfer accept --app app_01HZ…    # commit — they own it now
+npx deepspace app transfer accept --app app_01HZ…    # commit — they own it now
 ```
 
 On acceptance the app — data, secrets, routes, custom domains — moves as-is; only the owner (and billing) changes. Tell the recipient the app id; there is no in-product notification. Collaborators cannot transfer (or undeploy) — that stays with the owner. → [references/collaborators.md](collaborators.md)

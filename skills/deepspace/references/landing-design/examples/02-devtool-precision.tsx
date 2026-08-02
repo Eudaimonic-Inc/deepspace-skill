@@ -69,12 +69,6 @@ import { MotionConfig, motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, Check } from 'lucide-react'
 import { ScrollReveal } from '../components/landing/primitives'
 
-// ── Inline helpers ───────────────────────────────────────────────────────────
-const LANDING_SEEN_KEY = 'app-landing-seen'
-function markLandingSeen() {
-  try { localStorage.setItem(LANDING_SEEN_KEY, 'true') } catch {}
-}
-
 // ── Signature element: live terminal ─────────────────────────────────────────
 const TERMINAL_SCRIPT: Array<{ type: 'in' | 'out' | 'ok'; text: string; pauseAfter?: number }> = [
   { type: 'in', text: '$ runner watch', pauseAfter: 450 },
@@ -146,7 +140,7 @@ function TopBar() {
           </nav>
         </div>
         <button
-          onClick={() => { markLandingSeen(); navigate('/home') }}
+          onClick={() => navigate('/home')}
           className="font-mono text-[13px] font-medium text-primary hover:text-primary/80"
         >
           launch →
@@ -185,7 +179,7 @@ function Hero() {
           className="mt-8 flex items-center gap-4"
         >
           <button
-            onClick={() => { markLandingSeen(); navigate('/home') }}
+            onClick={() => navigate('/home')}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
           >
             Open runner
@@ -300,7 +294,7 @@ function CTA() {
           <p className="mt-2 opacity-70 font-mono text-sm">That&rsquo;s the whole demo.</p>
         </div>
         <button
-          onClick={() => { markLandingSeen(); navigate('/home') }}
+          onClick={() => navigate('/home')}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-background text-foreground font-mono text-sm font-medium"
         >
           <Check className="w-4 h-4" />

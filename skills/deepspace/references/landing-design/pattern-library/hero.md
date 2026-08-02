@@ -12,7 +12,6 @@ When to use: product-led SaaS where a UI preview is the easiest way to explain t
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { motion } from '../components/landing/primitives'
-import { markLandingSeen } from '../pages/landing'
 
 // Inline product mockup — replace with your own shape.
 function AppMockup() {
@@ -68,7 +67,7 @@ export function SplitHero() {
           className="mt-8"
         >
           <button
-            onClick={() => { markLandingSeen(); navigate('/home') }}
+            onClick={() => navigate('/home')}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground text-sm font-medium group"
           >
             Start free
@@ -95,7 +94,6 @@ When to use: consumer brands, lifestyle/editorial products, products whose value
 ```tsx
 import { useNavigate } from 'react-router-dom'
 import { motion } from '../components/landing/primitives'
-import { markLandingSeen } from '../pages/landing'
 
 const HERO_BG = 'TODO: paste integration-generated image URL here'
 
@@ -126,7 +124,7 @@ export function AtmosphericHero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.9 }}
-          onClick={() => { markLandingSeen(); navigate('/home') }}
+          onClick={() => navigate('/home')}
           className="mt-10 inline-flex items-center px-7 py-3.5 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90"
         >
           Enter →
@@ -146,7 +144,6 @@ When to use: multi-feature SaaS where the first viewport should already communic
 ```tsx
 import { useNavigate } from 'react-router-dom'
 import { motion } from '../components/landing/primitives'
-import { markLandingSeen } from '../pages/landing'
 
 export function BentoHero() {
   const navigate = useNavigate()
@@ -165,7 +162,7 @@ export function BentoHero() {
               TODO: 3–8 word headline.
             </h1>
             <button
-              onClick={() => { markLandingSeen(); navigate('/home') }}
+              onClick={() => navigate('/home')}
               className="mt-8 inline-flex items-center px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium"
             >
               Get started →
@@ -242,7 +239,6 @@ When to use: manifesto sites, writing products, agencies. The headline IS the he
 ```tsx
 import { useNavigate } from 'react-router-dom'
 import { motion } from '../components/landing/primitives'
-import { markLandingSeen } from '../pages/landing'
 
 export function PosterHero() {
   const navigate = useNavigate()
@@ -267,7 +263,7 @@ export function PosterHero() {
             TODO: one short supporting sentence — 12 words or under.
           </p>
           <button
-            onClick={() => { markLandingSeen(); navigate('/home') }}
+            onClick={() => navigate('/home')}
             className="font-mono text-xs uppercase tracking-[0.25em] text-primary hover:opacity-70"
           >
             Begin →
@@ -289,7 +285,6 @@ When to use: dev tools, APIs, technical infrastructure. A fake terminal types co
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
-import { markLandingSeen } from '../pages/landing'
 
 const SCRIPT: Array<{ type: 'in' | 'out'; text: string; pauseAfter?: number }> = [
   { type: 'in', text: '$ TODO install your-cli', pauseAfter: 400 },
@@ -330,7 +325,7 @@ export function TerminalHero() {
           TODO: one line.
         </p>
         <button
-          onClick={() => { markLandingSeen(); navigate('/home') }}
+          onClick={() => navigate('/home')}
           className="mt-8 inline-flex items-center px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium"
         >
           Try it →

@@ -19,7 +19,6 @@ import {
   motion,
   cn,
 } from '../components/landing/primitives'
-import { markLandingSeen } from '../pages/landing'
 
 const NAV_SECTIONS = [
   { id: 'features', label: 'Features' },
@@ -72,7 +71,7 @@ export function LandingNav() {
 
   // /home is public by default in the scaffold. To force sign-in on click,
   // either swap to an `(app)/(protected)/<page>` route or open <AuthOverlay> here.
-  const enterApp = () => { markLandingSeen(); navigate('/home') }
+  const enterApp = () => navigate('/home')
 
   const mobileDropdown = (
     <AnimatePresence>
@@ -208,7 +207,6 @@ When to use: dev tools, doc-heavy products, anything where the nav needs to pers
 ```tsx
 import { useNavigate } from 'react-router-dom'
 import { motion } from '../components/landing/primitives'
-import { markLandingSeen } from '../pages/landing'
 
 const NAV = [
   { label: 'Docs', href: '/docs' },
@@ -237,7 +235,7 @@ export function DocsTopBar() {
           </nav>
         </div>
         <button
-          onClick={() => { markLandingSeen(); navigate('/home') }}
+          onClick={() => navigate('/home')}
           className="text-sm font-medium text-primary hover:text-primary/80"
         >
           Launch app →
@@ -257,7 +255,6 @@ When to use: manifesto sites, single-screen kinetic-typography landings, retro/Y
 ```tsx
 import { useNavigate } from 'react-router-dom'
 import { motion } from '../components/landing/primitives'
-import { markLandingSeen } from '../pages/landing'
 
 export function NoNavCornerBrand() {
   const navigate = useNavigate()
@@ -275,7 +272,7 @@ export function NoNavCornerBrand() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.0 }}
-        onClick={() => { markLandingSeen(); navigate('/home') }}
+        onClick={() => navigate('/home')}
         className="fixed top-6 right-6 z-50 font-mono text-xs uppercase tracking-[0.3em] text-primary hover:opacity-70"
       >
         Enter →
@@ -296,7 +293,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 import { AnimatePresence, motion, cn } from '../components/landing/primitives'
-import { markLandingSeen } from '../pages/landing'
 
 const LINKS = [
   { label: 'Features', href: '#features' },
@@ -346,7 +342,7 @@ export function HamburgerNav() {
               ))}
               <motion.li initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}>
                 <button
-                  onClick={() => { markLandingSeen(); navigate('/home') }}
+                  onClick={() => navigate('/home')}
                   className="mt-6 inline-flex items-center px-6 py-3 rounded-full bg-primary text-primary-foreground text-base font-medium"
                 >
                   Enter the app →
@@ -369,7 +365,6 @@ When to use: editorial, magazine, zine-style, or single-page long-scroll pages w
 
 ```tsx
 import { useNavigate } from 'react-router-dom'
-import { markLandingSeen } from '../pages/landing'
 
 const SECTIONS = [
   { id: 'issue', label: 'This issue' },
@@ -395,7 +390,7 @@ export function EditorialIndex() {
         ))}
         <span className="flex-1" />
         <button
-          onClick={() => { markLandingSeen(); navigate('/home') }}
+          onClick={() => navigate('/home')}
           className="text-primary hover:opacity-70"
         >
           Enter →
@@ -417,7 +412,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronDown } from 'lucide-react'
 import { AnimatePresence, motion, cn } from '../components/landing/primitives'
-import { markLandingSeen } from '../pages/landing'
 
 const MENU = {
   Product: [
@@ -477,7 +471,7 @@ export function MegaMenuNav() {
           ))}
         </nav>
         <button
-          onClick={() => { markLandingSeen(); navigate('/home') }}
+          onClick={() => navigate('/home')}
           className="text-sm font-medium text-primary hover:text-primary/80"
         >
           Launch →

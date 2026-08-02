@@ -18,7 +18,7 @@ One hygiene caveat, not a blocker: the value lands in the command (shell history
 
 ```bash
 npx deepspace secrets set API_KEY=sk_test_...   # works even pre-deploy (first write registers the app id to you)
-npx deepspace dev                                # regenerates the cache; worker sees env.API_KEY
+npx deepspace dev start                         # regenerates the cache; worker sees env.API_KEY
 ```
 
 Two propagation rules the CLI reminds you of: a **deployed** app picks up changes only at the next `deploy` (bindings are set at deploy time), and a **running** `dev` session only on restart (the cache regenerates at startup, not mid-session).
@@ -82,7 +82,7 @@ A collaborator ([references/collaborators.md](collaborators.md)) has **full** se
 - **Changed a secret but production still sees the old value** → redeploy. Deployed workers hold `secret_text` bindings; they don't fetch at runtime.
 - **Changed a secret but local dev still sees the old value** → restart `dev` (or `secrets pull`); the cache regenerates only at startup.
 - **`Not the app owner or a collaborator` (403)** → ask the owner for `collaborators add <your-email>` — or your access was revoked.
-- **`This app id is registered to another user`** → you're holding someone else's id (cloned repo). `npx deepspace init --new-id` forks it into your own app (fresh store).
+- **`This app id is registered to another user`** → you're holding someone else's id (cloned repo). `npx deepspace app init --new-id` forks it into your own app (fresh store).
 - **`list` shows nothing on a fresh app/config** → legitimate; the first `set` creates the store. Reads are side-effect-free and never register anything.
 - **Name rejected** → match `[A-Za-z_][A-Za-z0-9_]*` and avoid SDK-reserved binding names.
 - A `DeepSpace detected secrets` comment block in a scaffolded `wrangler.toml` is a static placeholder the CLI does **not** maintain — `secrets list` is the truth.

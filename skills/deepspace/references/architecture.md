@@ -1,6 +1,6 @@
 # Architecture — DOs, scopes, and cross-app proxies
 
-Load this reference when editing `worker.ts`, adding a new Durable Object class, debugging WebSocket routing, wiring cross-app shared scopes (`workspace:*`, `dir:*`, `conv:*`), or understanding scope-ID conventions. Skip it for pure frontend work or app-scoped data only.
+Load when editing `worker.ts` or `src/server/realtime-routes.ts`, adding a Durable Object, debugging WebSockets, or wiring cross-app scopes (`workspace:*`, `dir:*`, `conv:*`). Skip pure frontend or app-scoped data work.
 
 ## Per-app DOs
 
@@ -20,7 +20,7 @@ App Worker (per-app)                 Platform Worker (shared)
 └── Static assets (SPA fallback)
 ```
 
-The scaffolded `AppRecordRoom` already passes your `schemas` to `RecordRoom` — you rarely need to touch `worker.ts`. The one case where you do is cross-app data sharing (below).
+`AppRecordRoom` already passes `schemas` to `RecordRoom`. Edit `worker.ts` for room declarations/route order and `src/server/realtime-routes.ts` for cross-app routing below.
 
 ### Route reservation (`run_worker_first`)
 
@@ -45,7 +45,7 @@ The scaffolded `/ws/:roomId` handler routes **every** scope to the app's own `RE
 
 ### 1. Add the service binding to `wrangler.toml` (production)
 
-The scaffold declares `PLATFORM_WORKER?: Fetcher` (and `PLATFORM_WORKER_URL?: string`) in the `Env` interface but does not ship the wrangler binding. Cross-worker calls over plain `*.workers.dev` URLs return Cloudflare error 1042 in production, so the service binding is the only working transport for deployed apps. The `PLATFORM_WORKER_URL` fallback that `deepspace dev` writes into `.dev.vars` is a dev-only convenience — adequate for `wrangler dev`, never enough for prod.
+The scaffold declares `PLATFORM_WORKER?: Fetcher` (and `PLATFORM_WORKER_URL?: string`) in the `Env` interface but does not ship the wrangler binding. Cross-worker calls over plain `*.workers.dev` URLs return Cloudflare error 1042 in production, so the service binding is the only working transport for deployed apps. The `PLATFORM_WORKER_URL` fallback that `deepspace dev start` writes into `.dev.vars` is a dev-only convenience — adequate for `wrangler dev`, never enough for prod.
 
 ```toml
 [[services]]
@@ -58,7 +58,7 @@ service = "deepspace-platform"   # name of the deployed platform worker
 Use `platformWorkerFetch` from `deepspace/worker` instead of `c.env.PLATFORM_WORKER.fetch(...)` directly — the helper picks the binding in prod and the URL in dev, so the same code works in both environments:
 
 ```typescript
-// worker.ts — replace the single-line app.get('/ws/:roomId', wsRoute(...))
+// src/server/realtime-routes.ts — replace the /ws/:roomId registration
 import { platformWorkerFetch } from 'deepspace/worker'
 
 app.get('/ws/:roomId', async (c) => {
@@ -91,21 +91,21 @@ The client SDK no longer sends identity params over WS URLs — the worker would
 
 ## App-name rules
 
-The `name` field in `wrangler.toml` is the `<name>.app.space` subdomain. It must match `^[a-z0-9](?:-?[a-z0-9])+$` — lowercase, 2-63 chars, no leading / trailing / double dashes. **Both `deepspace dev` and `deepspace deploy` fail-fast on a non-canonical `name`** — for example, `name = "My_App"` bails with:
+The `name` field in `wrangler.toml` is the `<name>.app.space` subdomain. It must match `^[a-z0-9](?:-?[a-z0-9])+$` — lowercase, 2-63 chars, no leading / trailing / double dashes. **Both `deepspace dev start` and `deepspace deploy` fail-fast on a non-canonical `name`** — for example, `name = "My_App"` bails with:
 
 ```
 wrangler.toml: `name` "My_App" is not in canonical form. Update it to "my-app" and re-run.
 ```
 
-(The SDK ships a sanitize-and-warn `resolveAppName()` helper, but both commands wrap it in a strict equality gate — don't expect sanitization to rescue a bad name.) Earlier SDKs silently sanitized, which split identity across `[vars].APP_NAME` and deployed bindings — now you fix it once and every surface agrees. Edit the field and re-run.
+Both commands enforce strict equality after `resolveAppName()`; sanitization does not rescue a bad name. Edit the field and re-run.
 
 The `name` is seeded by the `<app-name>` argument at scaffold time but is fully editable afterward — `deploy` reads `wrangler.toml` fresh every run. To pair an arbitrary directory with an arbitrary subdomain, scaffold into the directory you want, then edit `wrangler.toml`'s `name` to the subdomain you want. Don't regenerate or move the scaffold to align them.
 
-The `name` is only the URL: the app's **identity** is the immutable `DEEPSPACE_APP_ID` in `[vars]` (minted at scaffold / `init` / first deploy — commit it), and data, secrets, collaborators, and custom domains all key to that id. Changing `name` on a deployed app is a supported **rename** — the CLI asks for confirmation (or `--rename`), everything else follows the id, and the old subdomain stays reserved for you for 30 days. → `references/app-identity.md`
+The `name` is only the URL: the app's **identity** is the immutable `DEEPSPACE_APP_ID` in `[vars]` (minted at scaffold / `app init` / first deploy — commit it), and data, secrets, collaborators, and custom domains all key to that id. Changing `name` on a deployed app is a supported **rename** — the CLI asks for confirmation (or `--rename`), everything else follows the id, and the old subdomain stays reserved for you for 30 days. → `references/app-identity.md`
 
 ## Upstream proxy helpers
 
-The scaffolded `worker.ts` already uses these for every cross-worker call. **Do not** replace them with raw `c.env.X.fetch(...)` — `wrangler dev` doesn't surface service bindings cross-process for SDK apps, so the binding is `undefined` locally and the fetch silently fails.
+The scaffolded route owners already use these for every cross-worker call. **Do not** replace them with raw `c.env.X.fetch(...)` — `wrangler dev` doesn't surface service bindings cross-process for SDK apps, so the binding is `undefined` locally and the fetch silently fails.
 
 - `apiWorkerFetch(env, path, init?)` — fetch the api-worker (binding-preferred, URL fallback)
 - `platformWorkerFetch(env, pathOrRequest, init?)` — fetch the platform-worker (binding-preferred, URL fallback). Accepts a `Request` object so you can hand off `c.req.raw` derivatives intact.
@@ -118,4 +118,4 @@ Each helper throws an actionable Error if neither transport is configured. See `
 - Schemas baked in at deploy time — no runtime schema loading.
 - Direct WebSocket per scope — no mux/gateway.
 - No user-scope DOs — user-scoped data lives in app DOs with RBAC filtering.
-- **Use `npx deepspace dev`** for local dev — never run `wrangler dev` + `vite dev` separately. The CLI's combined runner is what writes `.dev.vars` (with a freshly-minted `APP_OWNER_JWT`) and routes the app through the Cloudflare Vite plugin so service bindings, DO classes, and WebSocket routes all resolve in-process.
+- **Use `npx deepspace dev start`** for local dev — never run `wrangler dev` + `vite dev` separately. The CLI's combined runner is what writes `.dev.vars` (with a freshly-minted `APP_OWNER_JWT`) and routes the app through the Cloudflare Vite plugin so service bindings, DO classes, and WebSocket routes all resolve in-process.

@@ -11,7 +11,6 @@ When to use: the default closer. A full-width band that breaks the page's rhythm
 ```tsx
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
-import { markLandingSeen } from '../pages/landing'
 import { ScrollReveal } from '../components/landing/primitives'
 
 export function ContrastBand() {
@@ -25,7 +24,7 @@ export function ContrastBand() {
           </h2>
           <p className="mt-4 opacity-80 max-w-md mx-auto">TODO: one-line support.</p>
           <button
-            onClick={() => { markLandingSeen(); navigate('/home') }}
+            onClick={() => navigate('/home')}
             className="mt-8 inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-background text-foreground text-sm font-medium group"
           >
             TODO: verb
@@ -46,7 +45,6 @@ When to use: subtle close for editorial, minimalist, or premium directions. Page
 
 ```tsx
 import { useNavigate } from 'react-router-dom'
-import { markLandingSeen } from '../pages/landing'
 import { ScrollReveal } from '../components/landing/primitives'
 
 export function CenteredGlow() {
@@ -61,7 +59,7 @@ export function CenteredGlow() {
           TODO: one quiet close.
         </h2>
         <button
-          onClick={() => { markLandingSeen(); navigate('/home') }}
+          onClick={() => navigate('/home')}
           className="mt-8 inline-flex items-center px-6 py-3 rounded-full bg-foreground text-background text-sm font-medium"
         >
           TODO: verb →
@@ -80,7 +78,6 @@ When to use: brutalist, editorial, or agency directions. Breaks the max-width co
 
 ```tsx
 import { useNavigate } from 'react-router-dom'
-import { markLandingSeen } from '../pages/landing'
 import { ScrollReveal } from '../components/landing/primitives'
 
 export function AsymmetricCTA() {
@@ -96,7 +93,7 @@ export function AsymmetricCTA() {
         <ScrollReveal direction="right" delay={0.15} className="md:pb-4">
           <p className="text-muted-foreground max-w-xs text-sm leading-relaxed">TODO: supporting line.</p>
           <button
-            onClick={() => { markLandingSeen(); navigate('/home') }}
+            onClick={() => navigate('/home')}
             className="mt-4 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.25em] text-primary hover:opacity-70"
           >
             TODO: verb →

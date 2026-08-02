@@ -14,122 +14,111 @@ description: >
   don't name DeepSpace explicitly.
 ---
 
-DeepSpace builds and deploys real-time collaborative apps on Cloudflare Workers in one package — auth, RBAC, live data subscriptions, messaging, payments — and ships them to `<name>.app.space`.
+DeepSpace builds real-time collaborative apps on Cloudflare Workers and deploys them to `<name>.app.space`. Start from its scaffold; do not hand-build the runtime shell.
 
-Two hard gates come first: the user must be **logged in**, and the app must be **scaffolded** rather than hand-built.
-
-## 1. Log in first
-
-Every command that *runs* anything — `dev`, `test`, `deploy` — needs a signed-in DeepSpace account. There's no local-only mode: `dev` connects to deployed dev workers.
+## Start
 
 ```bash
-npx deepspace whoami     # probe (--json for agents)
-npx deepspace login      # only if whoami says signed-out
+npm create deepspace@latest <app-name>
+cd <app-name>
+npx deepspace dev start
 ```
 
-`login` opens a browser OAuth tab and polls up to 10 minutes — **pause and let the user finish it at the keyboard.** Don't wrap it in `timeout` / `sleep` / `kill` (that aborts the OAuth poll), and don't ask for their password. One login covers every app on the machine. Full login + CLI contract → `references/cli.md`.
+Use `-- --template copilot` for the three-panel AI shell; the default `starter` is minimal. The directory name seeds the live subdomain label; `DEEPSPACE_APP_ID` is the app's durable identity.
 
-## 2. Scaffold the app
+Network/account operations report `not_authenticated` when login is needed:
 
 ```bash
-npm create deepspace@latest <app-name>   # no login needed; <app-name> seeds the dir AND wrangler `name`
-cd <app-name>                            # (= deploy subdomain). Edit it later in wrangler.toml, not by moving the dir.
-npx deepspace dev                        # Vite + worker, HMR on localhost:5173
+npx deepspace auth login
+npx deepspace auth whoami
 ```
 
-Two templates ship: `starter` (default — minimal top-bar shell) and `copilot` (three-panel shell: collapsible sidebar, main panel, AI chat dock prewired to the app's records). Pick with `--template` (note the `--` when going through `npm create`):
+Login opens browser OAuth. Keep it in the foreground and let the user finish it; never add a timeout or request a password. See `references/cli.md` for output and exit semantics.
+
+## Discover before building
+
+Inspect both catalogs before hand-building a feature:
 
 ```bash
-npm create deepspace@latest <app-name> -- --template copilot
+npx deepspace add --list
+npx deepspace add --info <feature>
+npx deepspace integrations list
+npx deepspace integrations info <provider>/<endpoint>
 ```
 
-The two import surfaces:
+Install a matching block with `npx deepspace add <feature>`. Catalog names are summaries; inspect `--info` before ruling one out.
 
-```typescript
-import { RecordProvider, RecordScope, useQuery, useMutations, useAuth } from 'deepspace'        // frontend
-import { RecordRoom, verifyJwt, CHANNELS_SCHEMA } from 'deepspace/worker'                        // worker
-```
-
-## 3. Build — discover before you hand-build
-
-Run both catalogs *first thing* in any build — *never* skip on a hunch that nothing fits. The one-line names can't tell you what a block does; only `add --info` / `integrations info` can, so don't rule one out from the list alone.
-
-```bash
-npx deepspace add --list           # 17 UI features — landing, topbar, file-manager, kanban, messaging… with auto-wired schema/routes/nav
-npx deepspace add --info <feature>    # inspect a feature before installing
-npx deepspace add <feature>           # install it
-npx deepspace integrations list    # external APIs (weather, LLMs, stocks, sports…) via owner-pays proxy, no keys to manage
-```
-
-When you build by hand, where things live (load the matching reference from the table below as you touch each):
-
-| Path | Purpose |
+| Path | Owns |
 |---|---|
-| `src/schemas.ts` + `src/schemas/` | Collection schemas. Ships `usersSchema` (required, don't rename) + `settingsSchema`. |
-| `src/pages/` | File routes (generouted). Top level = static, `(app)/` = providers + data hooks, `(app)/(protected)/` = sign-in gated. `_app.tsx` is the root shell — **extend, don't replace.** → `references/auth.md` |
-| `src/themes.ts` + `src/themes.css` | Theme tokens, set on `<html data-theme>`. Ships two placeholders (`slate` dark default, `paper` light example) — **create the app's own theme; don't ship a placeholder.** → `references/uiux.md` §2 |
-| `src/constants.ts` | `APP_NAME`, `SCOPE_ID`, role re-exports. |
-| `worker.ts` | Hono worker; `__DO_MANIFEST__` declares the DO classes. AI chat routes live in `src/ai/chat-routes.ts`. → `references/architecture.md` |
+| `src/schemas.ts`, `src/schemas/` | Collection schemas; keep the required `usersSchema`. |
+| `src/pages/` | Generouted pages. `(app)/` mounts providers; `(app)/(protected)/` gates sign-in; extend `_app.tsx`. |
+| `src/themes.ts`, `src/themes.css` | App-specific theme tokens; shipped themes are placeholders. |
+| `src/constants.ts` | `APP_NAME`, immutable `APP_ID`, `SCOPE_ID`, role exports. |
+| `worker.ts`, `src/server/` | DO manifest and ordered route assembly; action, HTTP, and realtime owners. |
 
-The three hooks you'll reach for constantly:
+Core records are envelopes (`recordId`, `data`, metadata); fields live under `.data`:
 
-```typescript
-const { records, status } = useQuery<Item>('items', { where: { status: 'published' }, orderBy: 'createdAt' })
-const { create, put, remove } = useMutations<Item>('items')   // create returns the new recordId
+```ts
+const { records } = useQuery<Item>('items', { where: { status: 'published' } })
+const { createConfirmed, putConfirmed, removeConfirmed } = useMutations<Item>('items')
 const { isSignedIn, isLoaded } = useAuth()
 ```
 
-Records are envelopes — `{ recordId, data: T, createdBy, createdAt, updatedAt }`. User fields live under `.data` (`r.data.title`, never `r.title`). `put(recordId, patch)` takes a `Partial<T>` and merges server-side. For any other hook (messaging, presence, Yjs, canvas, cron, jobs), read `references/sdk-reference.md` before guessing.
+Read `references/sdk-reference.md` before guessing any other hook or export.
 
-## 4. Test, then deploy
+## Verify and ship
 
 ```bash
-npx deepspace test       # after runtime-affecting changes; multi-user features need a 2-user spec → references/testing.md
-npx deepspace deploy     # → <wrangler.name>.app.space
-npx deepspace deploy --env staging   # → isolated staging instance (v0.4+); rehearse risky changes first
-npx deepspace kill       # if your own dev port is stuck (never kill a sibling session's)
+npx deepspace test run
+npx deepspace deploy
+npx deepspace deploy --env staging
+npx deepspace dev kill
 ```
 
-Deploy's subdomain is `wrangler.toml`'s `name`, not the folder. On a **first** deploy, clear the pre-deploy checklist in `references/uiux.md` §5 (real home replacing the placeholder stub, an own theme created — not `slate`/`paper`, no browser-default primitives). Deploy mechanics, the `.dev.vars` contract, secret handling, and **multi-env / staging (`--env`, incl. the client-`APP_NAME` sync gotcha)** → `references/deploy.md`. The full CLI catalog (`integrations`, `test-accounts`, `screenshot`, `domain`, `library`, dev/kill flags) → `references/cli.md`.
+Run tests after runtime-affecting changes; shared behavior needs a two-user spec. Before a first deploy, replace placeholder home/theme/browser primitives per `references/uiux.md`.
 
-App secrets live in the platform's encrypted store, not in files: `npx deepspace secrets set KEY=value` — no setup step; worker code reads `env.KEY` in dev and prod alike, and the store (keyed by the app's immutable `DEEPSPACE_APP_ID` in `wrangler.toml`) is the **only** deploy input — never hand-edit `.dev.vars`. → `references/secrets.md`. The id is the app; the `name` is just the URL (renames, forking a cloned repo with `init --new-id`, ownership transfer → `references/app-identity.md`). Teammates the owner adds with `npx deepspace collaborators add <email>` can deploy the app and manage its secrets (not undeploy or transfer it). → `references/collaborators.md`.
+Each app has a Git remote named `space`. Use workspaces for parallel WIP, sync their exact HEAD before deploy, and treat rollback as bundle-retention-dependent. Load the narrow version-control, coordination, release, or GitHub reference below rather than one omnibus guide.
 
-## Load a reference when you reach its surface
+Secrets belong in the encrypted app store (`npx deepspace secrets set KEY=value`), never hand-edited `.dev.vars`. `DEEPSPACE_APP_ID` is identity; Wrangler `name` is the URL. Collaborators can deploy and manage secrets but cannot undeploy or transfer.
 
-Before editing files, scan this table and `Read` every row whose trigger matches — in the same turn, before the first edit. Each reference also declares its own "Load when…" gate on line 1; that gate is authoritative.
+## Reference routing
 
-| Reference | Read before |
+Before editing, load each matching reference and skip unrelated files.
+
+| Reference | Load when |
 |---|---|
-| `references/workflow.md` | Starting an end-to-end app build — a new product, a clone, or any multi-feature request. |
-| `references/cli.md` | The login contract, the full CLI command catalog (`dev`/`kill`/`integrations`/`test-accounts`/`screenshot`/`library`), and the `test` command. |
-| `references/deploy.md` | Deploy mechanics, the `.dev.vars` contract, secret handling, and multi-environment / staging deploys (`deploy --env`). |
-| `references/secrets.md` | Managing app secrets, using `npx deepspace secrets`, migrating a legacy `.dev.vars` app, configs/environments, or generated-cache behavior. |
-| `references/app-identity.md` | App ids (`DEEPSPACE_APP_ID`), forking a cloned repo (`init --new-id`), renames, `apps`/`undeploy`, ownership transfer. |
-| `references/legacy-migration.md` | A pre-app-id app (name-based id in `apps`, no `DEEPSPACE_APP_ID`), or your own deploy failing with "name … taken by another app". |
-| `references/collaborators.md` | Adding teammates to an app, deploying an app you don't own, or a 403 on deploy/secrets as a non-owner. |
-| `references/sdk-reference.md` | Any hook / type / export beyond `useQuery` / `useMutations` / `useAuth` — messaging, game rooms, presence, Yjs, canvas, R2. Open before `node_modules/deepspace/dist/*.d.ts`. |
-| `references/schemas.md` | Defining a collection, picking a permission rule, debugging "why can't this user see/edit X." |
-| `references/auth.md` | Choosing the auth model (public / gated / mixed), adding `<AuthGate>`, customizing the sign-in fallback. |
-| `references/architecture.md` | Editing `worker.ts`, adding DO classes / cross-app scopes (`workspace:*` / `dir:*` / `conv:*`), the identity-strip security model, app-name rules. |
-| `references/server-actions.md` | Privileged writes that bypass the caller's RBAC. |
-| `references/ai-chat.md` | A streamed chat UI with tool use over the app's records. |
-| `references/cron.md` | Scheduled tasks via `AppCronRoom` + `useCronMonitor`. |
-| `references/jobs.md` | Durable background work via `AppJobRoom` + `useJobs` (AI generation, exports, renders). |
-| `references/bindings.md` | Custom Cloudflare bindings (Vectorize / R2 / KV / D1 / Queues / AI / Browser / Hyperdrive), `"auto"` autoprovisioning, per-tenant metering. |
-| `references/integrations.md` | Calling external APIs through `integration.post(...)` and the discovery CLI. Itself points to `integrations/livekit.md` (audio/video rooms) and `integrations/google-oauth.md` (Gmail / Calendar / Drive / Contacts) when you reach those. |
-| `references/payments.md` | Anything involving money — Stripe, paywalls, subscriptions, pricing, "Upgrade" buttons, tips, refunds. **Never hand-roll Stripe.** |
-| `references/domain.md` | Buying / attaching / managing a custom domain. |
-| `references/uiux.md` | Theme, home page, primitives, "feels generic" feedback. Before `<select>` / `window.confirm` / `window.alert`. |
-| `references/testing.md` | Writing/extending specs, multi-user flows, debugging flaky tests. |
-| `references/preview.md` | Using the Claude desktop preview tool (`preview_start`), or when the preview shows stale code / edits never appear — especially inside a `.claude/worktrees/*` worktree. |
-| `references/landing-design.md` | Marketing / landing / splash pages. |
+| `references/workflow.md` | Starting a complete product, clone, or multi-feature build. |
+| `references/cli.md` | Command discovery, login, output/actions/exits, logs, or test entry points. |
+| `references/version-control.md` | Clone/push/pull, workspaces, or repository refusals. |
+| `references/coordination.md` | Status, activity, cursors, or resuming after context loss. |
+| `references/releases.md` | Deploy lineage, releases, rollback, retention, or deploy Git refusals. |
+| `references/github.md` | GitHub/remotes/PRs/Actions, only when requested. |
+| `references/deploy.md` | Deploy mechanics, `.dev.vars`, secrets at deploy, or `--env`. |
+| `references/secrets.md` | Secret store, configs, migrations, or generated cache. |
+| `references/app-identity.md` | App ids, `app init`, forks, renames, list/undeploy/transfer. |
+| `references/legacy-migration.md` | Pre-app-id apps or legacy ownership conflicts. |
+| `references/collaborators.md` | Teammates, invitations, or collaborator 403s. |
+| `references/sdk-reference.md` | Hooks/types beyond the three shown above. |
+| `references/schemas.md` | Collections, permissions, or visibility bugs. |
+| `references/auth.md` | Public/gated/mixed auth and `<AuthGate>`. |
+| `references/architecture.md` | `worker.ts`, DOs, routing, shared scopes, identity stripping. |
+| `references/server-actions.md` | Privileged writes bypassing caller RBAC. |
+| `references/ai-chat.md` | Streamed record-aware chat and tools. |
+| `references/cron.md` / `references/jobs.md` | Scheduled or durable background work. |
+| `references/bindings.md` | Cloudflare bindings and autoprovisioning. |
+| `references/integrations.md` | External APIs; it routes LiveKit and Google OAuth. |
+| `references/payments.md` | Any money flow; never hand-roll Stripe. |
+| `references/domain.md` | Custom-domain purchase, routing, or app targeting. |
+| `references/uiux.md` | Theme, shell, primitives, or generic-design feedback. |
+| `references/testing.md` | Specs, account pool, multi-user tests, or flaky failures. |
+| `references/preview.md` | Desktop preview or stale worktree code. |
+| `references/landing-design.md` | Marketing/landing/splash pages. |
 
-## Traps worth knowing up front
+## Common traps
 
-- **The scaffold shell is a placeholder, not a design.** The stub home page, minimal nav, and `slate`/`paper` themes are deliberately bare — never extend or imitate them as "the house style." Design the app's own look and theme (→ `references/uiux.md`; landing pages → `references/landing-design/`).
-- **Scaffold's UI primitives shadow the SDK.** `_app.tsx` uses `ToastProvider` from `src/components/ui/`, not `deepspace`. Importing `useToast` (or any local primitive) from `deepspace` throws at runtime. **Import from `../components/ui`.**
-- **Page files belong in `src/pages/`** — generouted scans only there; pages under `src/features/<name>/` 404.
-- **Data/auth hooks only work under `(app)/`** — providers mount in `(app)/_layout.tsx`, so a top-level (static) page calling `useAuth`/`useQuery` crashes at render. Details: `references/auth.md` § "Mixed (default)".
-- **Don't kill or assume a clean port 5173.** `tests/playwright.config.ts` ships `reuseExistingServer: true`, so if a sibling session already holds 5173 your tests silently run against *its* app. Don't kill another session's processes — use `npx deepspace dev --port 5174` and match `webServer.port` + `use.baseURL` in the config. → `references/testing.md`
-- **Never put identity in WebSocket URLs or `/api/*` headers** — the starter strips `userId`/`role`/etc. and re-applies them only from a verified JWT. Caller identity is always the JWT subject. → `references/architecture.md`
-- **Preview tool shows stale code / your edits never appear** — if you're editing in `.claude/worktrees/*`, the desktop preview tool serves the MAIN repo, not the worktree. Run `npx deepspace dev` once in the worktree and use the `wt-<name>` preview config it prints. → `references/preview.md`
+- Scaffold UI and `slate`/`paper` themes are placeholders, not house style.
+- Local UI primitives shadow SDK names; import them from `src/components/ui`, not `deepspace`.
+- Pages outside `src/pages/` are not routed; data/auth hooks require the `(app)/` providers.
+- Never trust port 5173 when sibling sessions exist. Use `dev start --port N` and match Playwright config; do not kill another session.
+- Caller identity comes from the verified JWT, never WebSocket query params or forwarded `/api/*` headers.
+- In `.claude/worktrees/*`, run `dev start` once and use the printed `wt-<name>` preview entry.

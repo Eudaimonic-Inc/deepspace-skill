@@ -70,12 +70,6 @@ import { useNavigate } from 'react-router-dom'
 import { MotionConfig, motion, useReducedMotion } from 'framer-motion'
 import { ScrollReveal } from '../components/landing/primitives'
 
-// ── Inline helpers ───────────────────────────────────────────────────────────
-const LANDING_SEEN_KEY = 'app-landing-seen'
-function markLandingSeen() {
-  try { localStorage.setItem(LANDING_SEEN_KEY, 'true') } catch {}
-}
-
 // ── Signature element: breath circle ─────────────────────────────────────────
 function BreathCircle() {
   const reduce = useReducedMotion()
@@ -129,7 +123,7 @@ function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 1.8 }}
-          onClick={() => { markLandingSeen(); navigate('/home') }}
+          onClick={() => navigate('/home')}
           className="mt-10 inline-flex items-center px-6 py-3 rounded-full bg-primary/60 text-primary-foreground text-sm tracking-wide hover:bg-primary/75 transition-colors"
         >
           Begin

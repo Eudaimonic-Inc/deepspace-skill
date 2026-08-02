@@ -1,10 +1,8 @@
 # Pattern library — index
 
-Copy-pasteable TSX snippets, organized by page section. Read this file as an index, then load **only the section file you need**. Each section file has 3–6 patterns and is self-contained.
+Copy-pasteable TSX by section. Load only the section files you need; snippets assume placement in `src/pages/index.tsx`, so adjust relative imports if extracting components.
 
 ## Pick your sections, then load only those files
-
-The recipe for a landing page:
 
 | Section | How many | Section file |
 |---|---|---|
@@ -16,39 +14,20 @@ The recipe for a landing page:
 | Footer | 1 | `pattern-library/footer.md` |
 | Scroll & motion | 0–N (only if your Direction calls for it) | `pattern-library/scroll-motion.md` |
 
-The `N1`, `H1`, `F1`, `S1`, `C1`, `FT1`, `SM1` labels inside each file are stable identifiers for commit messages and notes.
-
-**You will read maybe one or two of these files.** That is correct. Direction-first; reach for a pattern only after you've committed to a direction.
+Labels such as `N1`, `H1`, and `F1` are stable identifiers. Choose after committing to a Direction.
 
 ## How patterns integrate with DeepSpace
 
-These two paragraphs apply to every pattern in every section file. Read once.
-
-- **Primitives you can use freely** (from the scaffolded `src/components/landing/primitives.tsx`): `Typewriter`, `ScrollReveal`, `StaggerContainer`, `staggerChild`, `AnimatedStat`, plus the re-exports `cn`, `motion`, `AnimatePresence`, `useInView`, `ChevronDown`. These are semantic-token-clean.
-- **Primitives that contain rule violations** (`GlassCard`, `PlaceholderImage`, `BrowserMockup`, `SectionHeading`): each ships with `bg-foreground/[0.06]`, `border-foreground/[0.08]`, or hardcoded color names that fail the grep gate. Two choices when you reach for one:
-  1. **Recommended:** build the surface inline in your pattern/section with semantic tokens (`bg-card`, `border-border`, `bg-muted`) — the patterns in this library do this.
-  2. Edit `primitives.tsx` directly to replace the violating lines (they all have semantic-token equivalents).
-- **`markLandingSeen`** is exported from the feature-installed landing page (`src/pages/(app)/landing.tsx`), not from primitives. Import it as `import { markLandingSeen } from '../pages/(app)/landing'` from inside `src/components/landing/`, or inline the 2-line helper at the top of whatever file needs it:
-  ```tsx
-  const LANDING_SEEN_KEY = 'app-landing-seen'
-  function markLandingSeen() { try { localStorage.setItem(LANDING_SEEN_KEY, 'true') } catch {} }
-  ```
-- **Navigation** goes to `/home` (which is **public by default** in the scaffold — dynamic but not gated, at `src/pages/(app)/home.tsx`) via `useNavigate()` from `react-router-dom`. To force sign-in on a CTA click, point at a route under `src/pages/(app)/(protected)/` (any file there is gated by the scaffolded `(app)/(protected)/_layout.tsx`) — see SKILL.md Step 4. Sign-in itself lives in the scaffold's global nav (starter: `Navigation.tsx`; copilot: `AppSidebar.tsx`) via `AuthOverlay`.
+- Clean primitives: `Typewriter`, `ScrollReveal`, `StaggerContainer`, `staggerChild`, `AnimatedStat`, `cn`, `motion`, `AnimatePresence`, `useInView`, `ChevronDown`.
+- `GlassCard`, `PlaceholderImage`, `BrowserMockup`, and `SectionHeading` contain known gate violations. Prefer inline semantic surfaces or repair `primitives.tsx`.
+- CTAs navigate to public `/home`; target a route under `(app)/(protected)/` when sign-in is required. No “landing seen” storage flag exists.
 
 ## Universal rules
 
-These apply to every snippet. The grep gate in `anti-ai-checklist.md` enforces them.
-
-- Semantic tokens only (`bg-primary`, `text-foreground`, `bg-muted`, `border-border`). No hardcoded hex, `rgb()`, `oklch()`, or Tailwind color names (`violet-400`, `emerald-500`).
-- No `bg-foreground/[0.XX]`, `text-foreground/[0.XX]`, `border-foreground/[0.XX]` patterns — use `bg-muted`, `bg-card`, `border-border` instead.
-- Replace every `TODO: …` placeholder with product-specific copy.
-- **No pictograph emojis** (🚀 ✨ 💡 etc.) — use `lucide-react` icons or inline SVG. Plain typographic marks (`✓ ✗ → ← ↑ ↓ ★`) are allowed as text glyphs.
-- **Reduced motion:** wrap your landing tree in `<MotionConfig reducedMotion="user">` from `framer-motion`. `useTransform` from `useScroll`, `setInterval`/`raf` loops, and CSS keyframes still need manual `useReducedMotion()` gates — the scroll/motion file shows the pattern.
-
-## Scaffold gotcha (read once)
-
-The scaffolded `node_modules/deepspace/features/landing/src/LandingPage.tsx` and `primitives.tsx` ship with `bg-foreground/[0.06]`, `border-foreground/[0.08]`, hardcoded `bg-emerald-400`, and a violet conic gradient. If you install the `landing` feature and run the grep gate, expect hits **inside the scaffold itself**. Clean them up before shipping — every flagged line has a semantic-token equivalent (`bg-muted`, `border-border`, `bg-primary`, etc.).
+- Use semantic tokens; replace every `TODO`; use icons/SVG rather than pictograph emoji.
+- Wrap the tree in `<MotionConfig reducedMotion="user">`; manually gate scroll transforms, loops, and CSS keyframes.
+- Run `anti-ai-checklist.md` after composition.
 
 ## After you compose
 
-Run the grep gate from `anti-ai-checklist.md` before finishing. Any hit is a bug. Then eyeball-check that the page actually serves the Design Direction you wrote — if it doesn't, the bug isn't in a pattern, it's in your direction commitment.
+Eyeball-check that the page serves its Direction. If it does not, revise the Direction or composition rather than adding more patterns.

@@ -35,7 +35,7 @@ export async function runTask(name: string, env: Env): Promise<void> {
     //
     // Integrations — proxied through api-worker, billed to the app owner
     // (auth: `Authorization: Bearer ${env.APP_OWNER_JWT}`; throws clearly if
-    // APP_OWNER_JWT is missing locally — `npx deepspace dev` mints it into
+    // APP_OWNER_JWT is missing locally — `npx deepspace dev start` mints it into
     // .dev.vars). Returns the unwrapped `data` field; throws
     // `Integration call <endpoint> failed: <detail>` on non-2xx or success:false:
     //   ctx.integrations.call(endpoint, params)            → Promise<response>

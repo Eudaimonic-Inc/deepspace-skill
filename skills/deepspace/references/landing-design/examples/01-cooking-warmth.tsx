@@ -72,12 +72,6 @@ import { MotionConfig, motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 import { ScrollReveal } from '../components/landing/primitives'
 
-// ── Inline helpers (the scaffolded primitives don't export these) ────────────
-const LANDING_SEEN_KEY = 'app-landing-seen'
-function markLandingSeen() {
-  try { localStorage.setItem(LANDING_SEEN_KEY, 'true') } catch {}
-}
-
 // ── Signature element: torn-paper SVG divider ────────────────────────────────
 function TornPaperDivider({ flip = false }: { flip?: boolean }) {
   return (
@@ -146,7 +140,7 @@ function Hero() {
             Cook better weeknights without having to decide.
           </p>
           <button
-            onClick={() => { markLandingSeen(); navigate('/home') }}
+            onClick={() => navigate('/home')}
             className="mt-8 inline-flex items-center gap-2 px-5 py-2.5 rounded-none border-2 border-foreground bg-foreground text-background text-sm font-medium group hover:bg-primary hover:border-primary transition-colors"
           >
             Start cooking
@@ -246,7 +240,7 @@ function CTA() {
         </h2>
         <p className="mt-4 text-muted-foreground">First issue lands this Sunday.</p>
         <button
-          onClick={() => { markLandingSeen(); navigate('/home') }}
+          onClick={() => navigate('/home')}
           className="mt-8 inline-flex items-center gap-2 px-6 py-3 rounded-none border-2 border-foreground bg-foreground text-background text-sm font-medium hover:bg-primary hover:border-primary transition-colors"
         >
           Join the club →

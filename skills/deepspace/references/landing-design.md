@@ -1,10 +1,6 @@
 # Landing Page Design
 
-Build a landing page that looks human-crafted, not template-cloned. This reference is the design workflow: commit to a specific Direction before writing JSX, translate it into a Style Tile, pick one inspiration archetype, compose — then run the anti-AI grep gate.
-
-**When to load this reference:** the user asks for a landing page, marketing page, splash page, hero section, "front page," or any public-facing page a signed-out visitor is supposed to see before deciding to sign in. Also load it if the user installed the `landing` feature via `npx deepspace add landing` and wants it customized to their product, or if they've said the landing page "feels generic" / "looks AI-generated" / "needs more personality."
-
-**Skip this reference for:** the authenticated home page of a working app (that's `uiux.md` §1), maintenance tweaks to an already-themed landing page, or apps without a marketing surface (signed-in-only productivity tools).
+Load for a marketing/landing/splash page or generic-design feedback on one. For the authenticated product home, use `uiux.md`. The workflow is Direction → Style Tile → one inspiration archetype → composition → grep gate.
 
 ---
 
@@ -14,16 +10,14 @@ Build a landing page that looks human-crafted, not template-cloned. This referen
 
 Two paths:
 
-- **Design the shipped static landing.** The scaffold already ships `src/pages/index.tsx` — a **static** landing at `/`. Top-level pages mount no DeepSpace providers (no auth fetch, no WebSocket, no data hooks — see `references/auth.md` § "Mixed (default)"), which is exactly right for marketing/crawler traffic, and they inherit no app chrome. Rewrite that file (install `framer-motion` + `lucide-react` as needed). Use this path when your Direction calls for a page shape the feature's scaffolded sections can't easily produce (manifesto, long-scroll editorial, single-screen brutalism, etc.) — or by default.
-- **Install the `landing` feature.** Run `npx deepspace add landing`. It scaffolds a landing page at `src/pages/(app)/landing.tsx` (the installer places page files under the `(app)/` route group, so this landing is *dynamic* — providers mount, and it inherits the global Navigation) + `src/components/landing/primitives.tsx` + 9 optional section components (hero typewriter, features grid, FAQ, CTA, footer, etc.), and wires a nav entry (`protected: false`). This gives you a working skeleton in ~5 minutes. **Then customize aggressively** — shipping the scaffolded sections with placeholder copy swapped in is the failure mode this skill is designed to prevent. Note the shipped static `index.tsx` still owns `/`; decide which page is the real front door and remove or repoint the other.
+- **Static (default):** rewrite `src/pages/index.tsx` at `/`. Top-level pages mount no providers or app chrome, which suits marketing and crawlers.
+- **Dynamic feature:** `npx deepspace add landing` installs `(app)/landing.tsx`, primitives, and optional sections. Providers and global navigation mount. Treat every installed section as a skeleton; choose one real front door and remove or repoint the other.
 
 Either path, the rest of this workflow is the same.
 
 #### Hide the global Navigation on the landing route — required if the landing lives under `(app)/`
 
-The scaffold renders the app's `<Navigation />` (the top bar with Home / Settings / Sign In) from `src/pages/(app)/_layout.tsx`, above every `(app)/` route's `<Outlet />`. A **static top-level landing** (the shipped `src/pages/index.tsx`) sits outside that layout and never shows app chrome — skip this patch entirely.
-
-If your landing lives under `(app)/` (the `add landing` install path), the global nav stacks on top of your landing's own nav (or your no-nav decision) — landing chrome on top of app chrome reads less polished, and is the clearest telltale that a landing was bolted on without thought. Patch `src/pages/(app)/_layout.tsx` with a route-aware conditional:
+Static landings inherit no app chrome. For a landing under `(app)/`, hide the global nav on that route so it does not stack with landing chrome:
 
 ```tsx
 // src/pages/(app)/_layout.tsx
@@ -31,24 +25,18 @@ import { useLocation } from 'react-router-dom'
 
 export default function AppLayout() {
   const { pathname } = useLocation()
-  const isLanding = pathname === '/landing'  // adjust to wherever your landing route lives
+  const isLanding = pathname === '/landing'
 
   return (
-    <DeepSpaceAuthProvider>
-      <AuthBoot>
-        <div className="flex h-screen flex-col bg-background overflow-hidden">
-          {!isLanding && <Navigation />}
-          <main className="flex-1 overflow-y-auto min-h-0">
-            <Suspense fallback={...}><Outlet /></Suspense>
-          </main>
-        </div>
-      </AuthBoot>
-    </DeepSpaceAuthProvider>
+    <div className="flex h-screen flex-col">
+      {!isLanding && <Navigation />}
+      <main className="min-h-0 flex-1 overflow-y-auto"><Outlet /></main>
+    </div>
   )
 }
 ```
 
-The landing page now owns the viewport. If you don't make this edit, every nav pattern in `pattern-library/nav.md` will look stacked-on rather than integrated — that's the most common landing-page regression.
+Keep the layout's existing providers and suspense boundary around this conditional.
 
 ### 2. Fill the Design Direction block BEFORE any JSX
 
@@ -83,9 +71,7 @@ Apply the **sentence test** at the end: if everything you wrote could describe a
 
 ### 3. Read ONE inspiration archetype + its example file
 
-Load `landing-design/inspiration-gallery.md` — it's an index of 5 archetypes across different product domains. Pick the one whose *emotion* is closest to your direction (not the one whose product category matches). Read that one row and its "what to learn" paragraph. **Do not absorb all five** — you'll produce a mashup.
-
-Then open the corresponding example file at `landing-design/examples/0N-*.tsx` and read it end-to-end. Focus on the Design Direction block at the top — the lesson is *how a committed direction becomes concrete code*. **Do not import from the example** — it's a read-only teaching artifact and the grep gate will flag any `from.*landing-design/examples` import. Copy concepts, not files.
+Use `inspiration-gallery.md` to pick the closest *emotion*, then read only that row and example file. Learn how its Direction becomes code; never import or clone the example.
 
 ### 4. Compose the page
 
@@ -101,18 +87,15 @@ Build section by section. Load `landing-design/pattern-library.md` first — it'
 
 A typical landing page reaches for 4–5 of these files. Don't load all 7. Adapt each pattern's content and visual tokens to serve your Direction. **The pattern is the structure; your Direction is the soul.**
 
-The scaffolded sections that `npx deepspace add landing` drops into `src/components/landing/sections/` are an alternative source — fine for a quick first pass, but:
-
-> **Scaffold audit note.** The scaffolded `LandingPage.tsx` and `primitives.tsx` (and `GlassCard`, `PlaceholderImage`, `BrowserMockup`, `SectionHeading`) ship with `bg-foreground/[0.06]`, `border-foreground/[0.08]`, hardcoded `bg-emerald-400`, and a violet conic gradient — all of which fail the grep gate (rules #5 and #6). If you install the `landing` feature and use its sections or primitives, run the grep gate from the app root and replace every flagged line with semantic tokens (`bg-muted`, `border-border`, `bg-card`, `bg-primary/10`) before finishing. The patterns in `pattern-library.md` are already grep-clean.
+The installed landing sections are an alternate skeleton, but they contain known semantic-token violations. The gate will find them; fix rather than suppress every hit.
 
 ### 5. Fill images, run the grep gate
 
-- Generate atmospheric images via `integration.post('freepik/generate-image-flux-dev', ...)` or `gemini/generate-image` or `openai/generate-image` — see `references/integrations.md` and the per-integration YAML for body shapes. **Every prompt must include `no text, no words, no letters, no writing, no logos`** — AI image models render text as garbled gibberish.
+- Generate atmospheric images through a cataloged image integration; inspect its YAML payload and include `no text, no words, no letters, no writing, no logos` in every prompt.
 - Persist generated images via `useR2Files` if you need a stable URL (otherwise the image regenerates on every render).
 - Build product mockups as animated React components (inline SVG, styled divs, Framer Motion). **Never** use AI-generated images for UI screenshots.
 - Fill every image slot before finishing.
-- Run the grep gate (below) from the landing page directory. Any hit is a bug to fix.
-- Load `landing-design/anti-ai-checklist.md` if the grep gate flags something and you need the expanded rationale.
+- Run the complete gate in `landing-design/anti-ai-checklist.md` from the app root. Any hit is a bug to fix.
 
 ---
 
@@ -139,51 +122,16 @@ See `landing-design/anti-ai-checklist.md` for expanded rationale on every rule +
 
 ---
 
-## The pre-commit grep gate (short version)
+## Pre-commit gate
 
-Run from the app root before finishing. Any hit is a bug. Full version with comments in `landing-design/anti-ai-checklist.md`:
-
-```bash
-cd ~/Desktop/Work/<app-name>
-
-# hardcoded colors
-grep -rnE "#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}\b|rgba?\([0-9]|\b(violet|indigo|purple|blue|emerald|teal|amber|rose|pink|cyan|sky|green|red|orange|yellow|lime|fuchsia)-[0-9]{3}" --include="*.tsx" src/pages/index.tsx 'src/pages/(app)/landing.tsx' src/components/landing/ 2>/dev/null
-
-# fractional-opacity foreground
-grep -rnE "(bg|text|border)-foreground/(\[|[0-9])" --include="*.tsx" src/pages/index.tsx 'src/pages/(app)/landing.tsx' src/components/landing/ 2>/dev/null
-
-# pictograph emojis
-grep -rnP "[\x{1F000}-\x{1FFFF}]" --include="*.tsx" src/pages/index.tsx 'src/pages/(app)/landing.tsx' src/components/landing/ 2>/dev/null
-
-# template copy
-grep -rniE "Your DeepSpace app is running|My App|[Ll]orem [Ii]psum|streamline your|cutting.edge|state.of.the.art|next.generation|revolutionary|world.class|game.chang" --include="*.tsx" src/pages/index.tsx 'src/pages/(app)/landing.tsx' src/components/landing/ 2>/dev/null
-
-# TODOs
-grep -rnE "TODO[: ]" --include="*.tsx" src/pages/index.tsx 'src/pages/(app)/landing.tsx' src/components/landing/ 2>/dev/null
-```
-
-Also verify by eye:
-- Design Direction block at the top of the landing page file is filled with prose (no empty prompt lines)
-- Hero headline is 3–8 words
-- Hero has a commanding visual, not just centered text
-- Features section is not 3 identical cards
-- Every image slot is filled (either a real integration-generated URL or a code-based React visual)
-- The scaffolded landing feature sections have been replaced or heavily customized — not shipped as-is
+Run the single complete command block and visual checklist in `landing-design/anti-ai-checklist.md`; do not maintain a second copy here.
 
 ---
 
 ## Reference files (load on demand)
 
-- **`landing-design/design-direction.md`** — how to write a good Design Direction brief. Read this the first time you fill the block, or when the sentence test keeps rejecting what you write.
-- **`landing-design/style-tile.md`** — menus for the 6 Style Tile commits (color, type pair, theme, art direction, motion, voice). Open while filling the Style Tile — scan the relevant table, pick, move on.
-- **`landing-design/inspiration-gallery.md`** — the 5 archetypes. Read this to pick which one row is closest to your direction. **Don't read all five.**
-- **`landing-design/examples/0N-*.tsx`** — five worked example landing pages, one per archetype. Read **exactly one** after you've picked your archetype. Read-only reference — the grep gate flags imports from this folder. (See `inspiration-gallery.md` for the picking guide and which example also covers the floating-pill / FAQ / bento patterns.)
-- **`landing-design/pattern-library.md`** — small index (~50 lines) of the section-specific pattern files. Read this first to know which sub-files to load.
-- **`landing-design/pattern-library/{nav,hero,features,social-proof,cta,footer,scroll-motion}.md`** — copy-pasteable TSX snippets, one file per page section. Load only the sub-files you need (typically 4–5 of 7).
-- **`landing-design/anti-ai-checklist.md`** — expanded hard rules + the full grep gate commands. Read this before finishing.
-
----
-
-## What this reference is not
-
-It is not a template to clone. It is not a ranked menu of "best" landing patterns. It is not a promise of world-class output on the first try. The Direction-first workflow is the point. Iterate visually until the page matches the Direction you wrote.
+- `design-direction.md` — fill the brief or repair a generic one.
+- `style-tile.md` — scan only the decision table you need.
+- `inspiration-gallery.md` + `examples/0N-*.tsx` — select and read exactly one archetype; examples are read-only.
+- `pattern-library.md` + its section files — choose only the 4–5 sections you need.
+- `anti-ai-checklist.md` — run before finishing.
