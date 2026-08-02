@@ -12,7 +12,7 @@ npx deepspace <group> --help
 npx deepspace <group> <command> --help
 ```
 
-Important nested entry points are `dev start|kill`, `test run|screenshot|accounts`, `auth login|logout|whoami`, `app …`, and `integrations list|info|invoke`. Unknown commands fail with a hint; use only paths present in help.
+Important nested entry points are `dev start|kill`, `test run|screenshot|accounts`, `auth login|logout|whoami`, `app …`, and `integrations list|info|invoke`. Use only paths present in help; do not infer flat aliases from a subcommand name.
 
 ## Authentication
 
