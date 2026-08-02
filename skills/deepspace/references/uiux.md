@@ -76,10 +76,6 @@ If you're tuning the **default** rather than adding a block, edit the `@theme { 
 
 Tailwind v4's `@theme` bakes baseline shadow values into compiled utilities, so runtime `[data-theme]` overrides of `--shadow-*` tokens can't fully cancel them. For per-theme shadows on your own components, use literal arbitrary classes (`shadow-[0_2px_8px_0_rgba(0,0,0,0.08)]`) or scope a small utility under your `[data-theme]` block, and verify in the browser that the shadow changes when you switch themes.
 
-### Backward-compat aliases
-
-The slate `@theme` block includes legacy aliases (`--color-surface`, `--color-primary-hover`, etc.) some older components read. They derive from the modern tokens via `var(...)`, so once the modern tokens are set, the aliases follow. Only touch them if a component reads a drifted literal value.
-
 ### When to use `DeepSpaceThemeProvider` / `applyDeepSpaceTheme` instead
 
 These are exported from `deepspace` (the root package — there is no `deepspace/theme` subpath) and drive `--theme-*` CSS variables consumed by cross-app / deployed DeepSpace components (pills, directory panels, mini-apps). They read from `--color-*` by default (`readThemeFromDOM`), so the token setup is usually enough and they just follow. Reach for them explicitly only when embedding DeepSpace surfaces on a deployed site or mini-app that needs a different theme from the main app.

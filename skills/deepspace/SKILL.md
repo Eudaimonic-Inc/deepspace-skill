@@ -24,7 +24,7 @@ cd <app-name>
 npx deepspace dev start
 ```
 
-Use `-- --template copilot` for the three-panel AI shell; the default `starter` is minimal. The directory name seeds Wrangler's `name`, which controls the deploy subdomain.
+Use `-- --template copilot` for the three-panel AI shell; the default `starter` is minimal. The directory name seeds the live subdomain label; `DEEPSPACE_APP_ID` is the app's durable identity.
 
 Network/account operations report `not_authenticated` when login is needed:
 
@@ -53,7 +53,7 @@ Install a matching block with `npx deepspace add <feature>`. Catalog names are s
 | `src/schemas.ts`, `src/schemas/` | Collection schemas; keep the required `usersSchema`. |
 | `src/pages/` | Generouted pages. `(app)/` mounts providers; `(app)/(protected)/` gates sign-in; extend `_app.tsx`. |
 | `src/themes.ts`, `src/themes.css` | App-specific theme tokens; shipped themes are placeholders. |
-| `src/constants.ts` | `APP_NAME`, `SCOPE_ID`, role exports. |
+| `src/constants.ts` | `APP_NAME`, immutable `APP_ID`, `SCOPE_ID`, role exports. |
 | `worker.ts` | Hono routes and `__DO_MANIFEST__`. |
 
 Core records are envelopes (`recordId`, `data`, metadata); fields live under `.data`:
@@ -83,7 +83,7 @@ Secrets belong in the encrypted app store (`npx deepspace secrets set KEY=value`
 
 ## Reference routing
 
-Before editing, read every matching reference. Each file's first-line load gate is authoritative.
+Before editing, load each matching reference and skip unrelated files.
 
 | Reference | Load when |
 |---|---|
@@ -108,7 +108,7 @@ Before editing, read every matching reference. Each file's first-line load gate 
 | `references/bindings.md` | Cloudflare bindings and autoprovisioning. |
 | `references/integrations.md` | External APIs; it routes LiveKit and Google OAuth. |
 | `references/payments.md` | Any money flow; never hand-roll Stripe. |
-| `references/domain.md` | Custom domains. |
+| `references/domain.md` | Custom-domain purchase, routing, or app targeting. |
 | `references/uiux.md` | Theme, shell, primitives, or generic-design feedback. |
 | `references/testing.md` | Specs, account pool, multi-user tests, or flaky failures. |
 | `references/preview.md` | Desktop preview or stale worktree code. |

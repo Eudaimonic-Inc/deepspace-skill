@@ -12,7 +12,7 @@ npx deepspace <group> --help
 npx deepspace <group> <command> --help
 ```
 
-Important nested entry points are `dev start|kill`, `test run|screenshot|accounts`, `auth …`, `app …`, and `integrations invoke`. Unknown commands fail with a hint; there are no compatibility aliases or tombstones for unshipped names.
+Important nested entry points are `dev start|kill`, `test run|screenshot|accounts`, `auth login|logout|whoami`, `app …`, and `integrations list|info|invoke`. Unknown commands fail with a hint; use only paths present in help.
 
 ## Authentication
 
@@ -23,7 +23,7 @@ npx deepspace auth login
 npx deepspace auth whoami
 ```
 
-Login opens browser OAuth and polls for completion. Keep it in the foreground, let the user complete it, and never wrap it in a timeout or ask for a password. Sessions are machine-wide and refresh automatically; do not inspect or copy session files.
+Login opens browser OAuth and polls for completion. Keep it in the foreground, let the user complete it, and never wrap it in a timeout or ask for a password. Sessions are stored per auth plane and refresh automatically; do not inspect or copy session files.
 
 ## Output and exits
 

@@ -222,7 +222,7 @@ function Gallery() {
 
 > `R2FileInfo` exposes `{ key, size, uploaded, url, originalName?, uploadedBy? }` — there is no `mimeType` / `contentType` field, so `isImageFile(f.mimeType)` won't work directly off a listed file. Either branch on extension (`f.key.endsWith('.png')`), capture the mime type at upload time and store it alongside the key in your own collection, or use `getUrl(f.key)` and let the browser handle non-images. Confirm fields in `node_modules/deepspace/dist/index.d.ts` before relying on additional ones.
 
-> ⚠️ **Local-dev caveat**: R2 upload round-trips require `APP_IDENTITY_TOKEN`, a secret minted by the deploy worker. The CLI now writes it into `.dev.vars` on `dev` / `test` runs, **but only after the app has been registered by at least one `npx deepspace deploy`** — on a fresh scaffold the token is simply absent and uploads return 401 from the platform worker. After the first deploy, re-run `npx deepspace dev start` so the CLI fetches the token; subsequent runs are fully working locally. The same `APP_IDENTITY_TOKEN` gate applies to `useSubscription`, `useCheckout`, and `captureScreenshot` — three different paths (R2 → `/api/files/*` → platform-worker `/internal/files/*`; subscriptions/charges → `/_deepspace/*` → api-worker; screenshot → server-side `platformWorkerFetch('/internal/screenshot')`), one shared bearer.
+> ⚠️ **Local-dev caveat**: R2 upload round-trips require `APP_IDENTITY_TOKEN`, a secret minted by the deploy worker. The CLI writes it into `.dev.vars` on `dev start` / `test run`, **but only after the app has been registered by at least one `npx deepspace deploy`** — on a fresh scaffold the token is simply absent and uploads return 401 from the platform worker. After the first deploy, re-run `npx deepspace dev start` so the CLI fetches the token; subsequent runs are fully working locally. The same `APP_IDENTITY_TOKEN` gate applies to `useSubscription`, `useCheckout`, and `captureScreenshot` — three different paths (R2 → `/api/files/*` → platform-worker `/internal/files/*`; subscriptions/charges → `/_deepspace/*` → api-worker; screenshot → server-side `platformWorkerFetch('/internal/screenshot')`), one shared bearer.
 
 ### Platform / Integrations
 
@@ -367,7 +367,7 @@ Wrappers around the DO tools API that read/write the `ai-chats` and `ai-messages
 - `deleteChatCascade(stub, chatId, userId)` — delete all `ai-messages` rows where `chatId` matches, then the `ai-chats` row. Best-effort: throws aggregated error if any delete fails.
 - `loadMessages(stub, chatId, userId) → Promise<ChatMessageRow[]>` — chronologically ordered messages for one chat, filtered by `userId` (defense in depth).
 - `appendMessage(stub, { id, chatId, userId, role, content, parts? })` — write one row.
-- Types: `ChatRow` (`{ recordId, id (@deprecated alias for recordId), userId, title, model?, compactedSummary?, compactedThroughId?, createdAt, updatedAt }`), `ChatMessageRow` (`{ recordId, id (@deprecated alias for recordId), chatId, userId, role, content, parts?, createdAt }`). **Use `recordId`**, not `id` — `id` is kept only for backward compatibility and may be removed in a future version. Reading `chat.id` and sending `{ chatId: chat.id }` happens to work today, but `chat.recordId` is the canonical field across the rest of the SDK and won't silently `undefined` if `id` is dropped.
+- Types: `ChatRow` (`{ recordId, userId, title, model?, compactedSummary?, compactedThroughId?, createdAt, updatedAt }`) and `ChatMessageRow` (`{ recordId, chatId, userId, role, content, parts?, createdAt }`). Both use `recordId`; there is no `id` alias.
 
 ### AI chat — schemas
 - `AI_CHATS_SCHEMA` — pre-built schema for the `ai-chats` collection. RBAC: members `read/update/delete: 'own'`, `create: false` (writes only via the worker). Drop into `src/schemas.ts` to enable AI chat persistence.
@@ -387,9 +387,10 @@ Pure decoders for the Vercel AI SDK v5 `toUIMessageStreamResponse` SSE body. Use
 - `ActionResult<TData = unknown>` — discriminated union: `{ success: true; data: TData; error?: never } | { success: false; data?: never; error: string }`. Narrow with `if (result.success) { result.data … }` — TS narrows `data` to the per-op shape (`{ records, count }` for query, `{ record }` for get, `{ recordId }` for mutations). For `tools.integration`, `result.data` **is the integration body directly** — an OpenAI call yields `result.data.choices`, a Freepik image call yields `result.data.images`, etc. There is no `.response` / `.status` wrapper.
 
 ### AI tool helpers (from `deepspace/worker`)
-- `BUILT_IN_TOOLS` — catalog of read-only tool definitions.
+- `BUILT_IN_TOOLS` — schema, record, user, and Yjs tool definitions. It includes mutations (`records.create/update/delete`, `yjs.setText`); an app's allowlist determines which the model receives, while room permissions enforce each call.
 - `ToolSchema` — tool-definition type.
-- See `src/ai/tools.ts` in the scaffold for `buildSystemPrompt(appName, schemas)` and `buildReadOnlyTools(executor)` — both are app-local by default (the scaffold ships a reference implementation you can edit to add custom tools).
+- `applyAiToolDefaults(name, params)` — applies assistant-only defaults such as the bounded `records.query` page size.
+- See the scaffold's app-local `src/ai/tools.ts` for `buildSystemPrompt` and `buildTools`; edit its allowlist for a stricter assistant.
 
 ### R2 helpers
 - `createScopedR2Handler(...)` — route handler for scoped R2 reads/writes.
@@ -451,10 +452,10 @@ Production note: cross-worker calls over plain `*.workers.dev` URLs return Cloud
 
 ## Platform-backed server helpers (`deepspace/server`)
 
-Worker-side helpers that call into shared platform services (Browser Rendering, Stripe, refund ledger) on the app's behalf, signing with the per-app `APP_IDENTITY_TOKEN`. They live in their own entry point so apps that don't need them avoid pulling the dependencies. All require `Env` to include `APP_IDENTITY_TOKEN: string` and `APP_NAME: string`. Subscriptions and refunds extend `ApiWorkerEnv`; `captureScreenshot` extends `PlatformWorkerEnv`.
+Worker-side helpers that call shared platform services on the app's behalf and sign with `APP_IDENTITY_TOKEN`. Their environment types also require immutable `DEEPSPACE_APP_ID`; subscriptions/refunds extend `ApiWorkerEnv`, while screenshots extend `PlatformWorkerEnv`.
 
 ### Screenshots (shared Browser Rendering)
-- `captureScreenshot(env, { url, viewport?, waitUntil?, timeoutMs?, fullPage? }) → Promise<{ body: ArrayBuffer; contentType: 'image/png' } | null>` — renders a URL via the platform's shared Browser Rendering binding. Returns `null` on any non-2xx (rate limit, allowlist miss, timeout) so the worker can fall back to a placeholder. The platform enforces a host allowlist (`*.app.space` / `*.deep.space`), per-app sliding rate limits, and viewport / timeout clamping. **Apps no longer need their own `browser_rendering` binding for standard preview / OG-image flows** — only add one if you need an unmetered or differently-configured browser (e.g., custom user agents, third-party hosts).
+- `captureScreenshot(env, url) → Promise<{ body: ArrayBuffer; contentType: string } | null>` — captures an authenticated DeepSpace-hosted HTTPS page and returns `null` on failure. The platform owns one fixed profile: 1280×800, 8-second navigation timeout, viewport only. It revalidates main-frame redirects, rate-limits by immutable app id, and accepts no caller viewport/wait/full-page options. Apps do not need their own `browser_rendering` binding for this helper.
 
 ### Subscriptions & charges (payments)
 - `requireSubscription(c, { tier? | atLeast? })` — gate route; throws `SubscriptionRequiredError` if the caller's tier doesn't match. See `references/payments.md`.
