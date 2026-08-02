@@ -33,7 +33,7 @@ Human text is complete; `--json` is the machine mirror. Refusals carry a stable 
 |---|---|
 | `0` | Operation completed. |
 | `1` | Failure/refusal; retrying unchanged will not help. |
-| `2` | Safe stop with `actionRequired: true` and one executable local action. The operation may have succeeded (`ok:true`) or refused before mutation (`ok:false`). |
+| `2` | Safe partial progress or stop with `actionRequired: true`; local work or judgment remains. The operation may have succeeded (`ok:true`) or refused after a safe partial mutation (`ok:false`). |
 
 When exactly one deterministic follow-up exists, JSON includes:
 
@@ -41,7 +41,7 @@ When exactly one deterministic follow-up exists, JSON includes:
 {"action":{"cwd":"/absolute/app","argv":["deepspace","pull"]}}
 ```
 
-Human output renders the same action as `Next:`. Run `argv` directly in `cwd`; do not join it into a shell string. Terminal results, status reports, and input-dependent choices omit the field. Do not infer an action from absence.
+Human output renders the same action as `Next:`. Run `argv` directly in `cwd`; do not join it into a shell string. Terminal results, status reports, consent, destructive overrides, and input-dependent choices omit the field. An exit-2 result may therefore require inspecting its facts rather than executing a supplied command; do not infer an action from absence.
 
 One-shot `--json` writes one document, except commands that inherit child output. `logs --follow --json` and `activity --follow --json` are NDJSON streams; parse one frame per line.
 
