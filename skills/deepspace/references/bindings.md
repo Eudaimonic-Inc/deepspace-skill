@@ -1,13 +1,10 @@
 # Custom bindings & per-tenant metering
 
-Load this reference when the app needs a Cloudflare resource beyond the SDK defaults — **Vectorize, AI, R2, KV, D1, Queues, Browser Rendering, Hyperdrive, or Analytics Engine** — when wiring per-tenant cost tracking via `USAGE_EVENTS`, when bootstrapping a D1 schema with `runMigrations`, or when a deploy fails with a binding-related error. Skip it for apps that only use the SDK's built-in DOs (`AppRecordRoom` / `AppYjsRoom` / `AppCanvasRoom` / `AppPresenceRoom` / `AppCronRoom` / `AppJobRoom`) and the `integration.post(...)` proxy.
+Load for custom Cloudflare resources, `USAGE_EVENTS` metering, D1 migrations, or binding deploy errors. Built-in DOs and `integration.post(...)` need no custom binding.
 
 ## TL;DR
 
-1. Declare the binding in `wrangler.toml` exactly the way you would for a stand-alone Worker.
-2. For per-app resources (Vectorize, R2, KV, D1, Queues), set the ID field to **`"auto"`** and add the required companion field (`dimensions`+`metric` / `title` / `database_name`).
-3. Deploy. The deploy worker validates the manifest, provisions any `"auto"` resources on the platform CF account, persists their IDs in `app-resources/<appName>.json`, and reuses them on every subsequent deploy.
-4. Optional: call `runMigrations(env.MY_DB, [...])` at worker startup to bootstrap D1 schema, and `meterAi` / `meterVectorize` after each call to roll cost up per tenant.
+Declare standard bindings in `wrangler.toml`; use `"auto"` only for D1, KV, Vectorize, R2, and Queue ID fields, with the companion fields shown below. Deploy validates/provisions once and reuses the registry. Use `runMigrations` for D1 bootstrap and the metering helpers after billable calls.
 
 ## Declare in `wrangler.toml`
 
@@ -100,7 +97,7 @@ Auto-provisioned D1 gives you an empty database. Use `runMigrations` to create y
 ```typescript
 import { runMigrations } from 'deepspace/worker'
 
-// In worker.ts, inside the fetch handler or once at module init:
+// Before first DB use in a controlled initialization path (avoid concurrent callers):
 await runMigrations(env.MY_DB, [
   `CREATE TABLE notes (
      id TEXT PRIMARY KEY,
@@ -154,9 +151,6 @@ Cost rollup multipliers live in `COST_RATES` (also exported from `deepspace/work
 
 ## Gotchas
 
-- **Vectorize dimension / metric mismatch is not caught at deploy.** If you change `dimensions` from 768 → 1536 after the index was created, adoption succeeds and the failure surfaces at first-vector-insert at runtime. Delete the index and redeploy if you really need to change shape.
-- **`"auto"` is platform-side only.** Local dev does not provision; the binding only resolves at `npx deepspace deploy`. For local development against a real CF resource, point the binding at a manually-created resource by ID instead of `"auto"`.
-- **User-secret names cannot collide with custom-binding names or DO class names.** The deploy worker rejects with 400 before forwarding to WfP. If you hit this, rename the remote secret key or the binding.
-- **`runMigrations` is naive on `;`-inside-literals.** If you need DDL with embedded semicolons (extremely rare; mostly only triggers when seeding fixture rows from a migration), split that statement into its own array entry without a trailing `;`.
-- **Hyperdrive can be declared but cannot use `"auto"`.** Provision the Hyperdrive config in the CF dashboard, copy the ID into `wrangler.toml`, and redeploy.
-- **R2 + Vectorize CF-side names are not the binding name.** When debugging in the CF dashboard, look for `app-<appName>-<bindingLower>` — that's the actual resource name. The friendly `binding = "VEC"` is only what your worker code sees.
+- Vectorize dimension/metric changes are not validated against an adopted index; recreate it before changing shape.
+- `"auto"` provisions only during deploy. For local development, bind a manually created resource by ID.
+- User-secret names cannot collide with custom bindings or DO class names; rename one side if deploy rejects the collision.

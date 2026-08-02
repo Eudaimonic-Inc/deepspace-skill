@@ -72,12 +72,6 @@ import { useNavigate } from 'react-router-dom'
 import { MotionConfig, motion, useReducedMotion } from 'framer-motion'
 import { ScrollReveal } from '../components/landing/primitives'
 
-// ── Inline helpers ───────────────────────────────────────────────────────────
-const LANDING_SEEN_KEY = 'app-landing-seen'
-function markLandingSeen() {
-  try { localStorage.setItem(LANDING_SEEN_KEY, 'true') } catch {}
-}
-
 // ── Paper grain overlay (signature element, part 1) ──────────────────────────
 function PaperGrain() {
   return (
@@ -137,7 +131,7 @@ function Hero() {
       <div className="flex items-center justify-between">
         <span className="font-sans font-bold text-2xl text-foreground">Story Box</span>
         <button
-          onClick={() => { markLandingSeen(); navigate('/home') }}
+          onClick={() => navigate('/home')}
           className="font-sans text-sm text-muted-foreground hover:text-foreground"
         >
           Open the app
@@ -171,7 +165,7 @@ function Hero() {
             <motion.button
               whileHover={{ scale: 1.04, rotate: -1 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => { markLandingSeen(); navigate('/home') }}
+              onClick={() => navigate('/home')}
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-primary text-primary-foreground font-sans font-bold text-base shadow-lg"
             >
               Start tonight&rsquo;s story
@@ -263,7 +257,7 @@ function CTA() {
           <motion.button
             whileHover={reduce ? undefined : { scale: 1.05 }}
             whileTap={reduce ? undefined : { scale: 0.96 }}
-            onClick={() => { markLandingSeen(); navigate('/home') }}
+            onClick={() => navigate('/home')}
             className="mt-8 inline-flex items-center gap-2 px-8 py-4 rounded-full bg-foreground text-background font-sans font-bold text-lg shadow-xl"
           >
             Make a book →

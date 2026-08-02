@@ -8,12 +8,10 @@
  *
  * The grep gate will flag any import from `landing-design/examples/`.
  *
- * THIS EXAMPLE DEMONSTRATES — read it specifically when your direction is SaaS:
- *   - The N1 dual-state floating-pill nav with active-section highlighting
- *     (the workhorse pattern; everything else here exists to show it working).
- *   - A FAQ accordion section.
- *   - A bento hero with an animated React product mockup (no AI image).
- *   - A bento feature grid that explicitly avoids 3-identical-cards.
+ * THIS EXAMPLE DEMONSTRATES:
+ *   - A bento hero with a once-only React product animation.
+ *   - A hierarchy-driven bento feature grid rather than identical cards.
+ * Use the dedicated pattern files for navigation, FAQ, CTA, and footer code.
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * DESIGN DIRECTION
@@ -83,163 +81,11 @@
 
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MotionConfig, motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import { ArrowRight, Check, Menu, X, Plus, Minus } from 'lucide-react'
+import { MotionConfig, motion, useReducedMotion } from 'framer-motion'
+import { ArrowRight } from 'lucide-react'
 import { ScrollReveal } from '../components/landing/primitives'
 
-// ── Inline helpers (scaffolded primitives don't export these) ────────────────
-
-const LANDING_SEEN_KEY = 'app-landing-seen'
-function markLandingSeen() {
-  try { localStorage.setItem(LANDING_SEEN_KEY, 'true') } catch {}
-}
-
-function useActiveSection(ids: readonly string[]) {
-  const [active, setActive] = useState<string | null>(null)
-  useEffect(() => {
-    const calc = () => {
-      // Trigger line ~30% down the viewport — a section is "active" as soon
-      // as its top crosses above this line. Element rects are in viewport
-      // coords, so the threshold is just window.innerHeight * 0.3.
-      const triggerY = window.innerHeight * 0.3
-      let cur: string | null = null
-      for (const id of ids) {
-        const el = document.getElementById(id)
-        if (el && el.getBoundingClientRect().top <= triggerY) cur = id
-      }
-      setActive(cur)
-    }
-    calc()
-    window.addEventListener('scroll', calc, { passive: true })
-    return () => window.removeEventListener('scroll', calc)
-  }, [ids])
-  return active
-}
-
 const cn = (...args: any[]) => args.filter(Boolean).join(' ')
-
-// ── Constants ────────────────────────────────────────────────────────────────
-
-const APP_NAME = 'Folio'
-const NAV_SECTIONS = [
-  { id: 'features', label: 'Features' },
-  { id: 'workflow', label: 'Workflow' },
-  { id: 'faq', label: 'FAQ' },
-] as const
-
-// ── N1 Floating-pill nav (the workhorse pattern) ─────────────────────────────
-
-function FloatingPillNav() {
-  const [isScrolled, setIsScrolled] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const navigate = useNavigate()
-  const ids = NAV_SECTIONS.map(s => s.id)
-  const active = useActiveSection(ids)
-
-  useEffect(() => {
-    const onScroll = () => setIsScrolled(window.scrollY > 80)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  const scrollTo = (id: string) => {
-    setMobileOpen(false)
-    const el = document.getElementById(id)
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
-  // The scaffold's `/home` is public by default. To force sign-in on click,
-  // either swap to a `/(protected)/<page>` route or replace this with a
-  // useState-driven `<AuthOverlay onClose={...} />` open. In a standalone
-  // harness without `/home` routed, this silently no-ops — expected.
-  const enterApp = () => { markLandingSeen(); navigate('/home') }
-
-  return (
-    <>
-      {/* Static top nav (page top; fades out on scroll) */}
-      <motion.div
-        className="absolute top-0 left-0 right-0 z-50"
-        animate={{ opacity: isScrolled ? 0 : 1 }}
-        transition={{ duration: 0.3 }}
-        style={{ pointerEvents: isScrolled ? 'none' : 'auto' }}
-      >
-        <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
-          <span className="text-lg font-semibold tracking-tight text-foreground">{APP_NAME}</span>
-          <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-8">
-              {NAV_SECTIONS.map(link => (
-                <button
-                  key={link.id}
-                  onClick={() => scrollTo(link.id)}
-                  className={cn(
-                    'text-sm font-medium transition-colors',
-                    active === link.id ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  {link.label}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={enterApp}
-              className="hidden md:inline-flex items-center px-4 py-1.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 active:scale-[0.97] transition-transform"
-            >
-              Start free
-            </button>
-            <button
-              className="md:hidden text-muted-foreground hover:text-foreground"
-              onClick={() => setMobileOpen(p => !p)}
-              aria-label="Toggle menu"
-            >
-              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Floating pill (slides down on scroll) */}
-      <AnimatePresence>
-        {isScrolled && (
-          <motion.nav
-            className="fixed top-4 inset-x-0 z-50 flex justify-center pointer-events-none"
-            initial={{ y: -80, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -80, opacity: 0 }}
-            transition={{ duration: 0.4, ease: [0.25, 0.4, 0.25, 1] }}
-          >
-            <div className="pointer-events-auto flex items-center gap-1 px-2 py-1.5 rounded-full bg-background/85 backdrop-blur-2xl border border-border shadow-lg">
-              <span className="text-foreground font-semibold text-sm px-3 whitespace-nowrap">{APP_NAME}</span>
-              <div className="w-px h-4 bg-border mx-1 hidden md:block" />
-              <div className="hidden md:flex items-center gap-0.5">
-                {NAV_SECTIONS.map(link => (
-                  <button
-                    key={link.id}
-                    onClick={() => scrollTo(link.id)}
-                    className={cn(
-                      'px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors',
-                      active === link.id
-                        ? 'text-foreground bg-muted'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/70',
-                    )}
-                  >
-                    {link.label}
-                  </button>
-                ))}
-              </div>
-              <button
-                onClick={enterApp}
-                className="ml-1 px-3.5 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 active:scale-[0.97] transition-transform"
-              >
-                Start free
-              </button>
-            </div>
-          </motion.nav>
-        )}
-      </AnimatePresence>
-    </>
-  )
-}
 
 // ── Signature element: animated bento dashboard mockup ───────────────────────
 
@@ -260,7 +106,7 @@ function ChartTile() {
           strokeLinejoin="round"
           points="0,50 30,42 60,46 90,32 120,30 150,18 180,12 200,8"
           initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: reduce ? 1 : 1, opacity: 1 }}
+          animate={{ pathLength: 1, opacity: 1 }}
           transition={reduce ? { duration: 0 } : { duration: 1.6, delay: 0.6, ease: 'easeInOut' }}
         />
       </svg>
@@ -392,7 +238,7 @@ function Hero() {
           className="mt-8 flex items-center gap-5"
         >
           <button
-            onClick={() => { markLandingSeen(); navigate('/home') }}
+            onClick={() => navigate('/home')}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 group"
           >
             Start the recap
@@ -473,195 +319,14 @@ function Features() {
   )
 }
 
-// ── Workflow (F4 single-showcase) ────────────────────────────────────────────
-
-function Workflow() {
-  return (
-    <section id="workflow" className="bg-muted py-28">
-      <div className="max-w-4xl mx-auto px-6">
-        <ScrollReveal>
-          <span className="text-xs font-mono uppercase tracking-[0.25em] text-primary">The week, condensed</span>
-          <h2 className="mt-3 text-4xl md:text-5xl font-bold tracking-[-0.02em] text-foreground leading-[1.1]">
-            You skim it Saturday morning over coffee.
-          </h2>
-        </ScrollReveal>
-        <ScrollReveal delay={0.15} className="mt-12 rounded-2xl bg-card border border-border p-8 md:p-10">
-          <div className="grid md:grid-cols-[auto_1fr] gap-x-8 gap-y-3 text-sm">
-            <span className="font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">Shipped</span>
-            <p className="text-foreground">Auth migration · search 2.0 · onboarding tweak.</p>
-
-            <span className="font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">Slipped</span>
-            <p className="text-foreground">Pricing-page redesign — moved to next sprint at K.&rsquo;s ask.</p>
-
-            <span className="font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">Blocked</span>
-            <p className="text-foreground">R. — waiting on the search index since Wed afternoon.</p>
-
-            <span className="font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">For Saturday</span>
-            <p className="font-semibold text-foreground leading-snug">
-              Plan Monday around the index. Auth is done; pricing can wait one more week.
-            </p>
-          </div>
-        </ScrollReveal>
-      </div>
-    </section>
-  )
-}
-
-// ── FAQ accordion (the section the user asked for) ───────────────────────────
-
-const FAQ = [
-  {
-    q: 'How does it know what shipped?',
-    a: 'It pulls merged PRs and closed Linear issues for your repo + workspace. You connect once, it stays in sync. No manual entry.',
-  },
-  {
-    q: 'Why not Slack?',
-    a: 'Slack is fine for the message. The folio is the page that survives the message. A year from now you can read June.',
-  },
-  {
-    q: 'Who writes the recap paragraph?',
-    a: 'A small model writes a draft from the data; you can edit it in 30 seconds before it sends, or let it auto-send at 3 PM Friday.',
-  },
-  {
-    q: 'Will my team see it?',
-    a: 'Only if you share it. The default is private to you — folio is for the manager\u2019s Saturday-morning read, not the team channel.',
-  },
-  {
-    q: 'What does it cost?',
-    a: 'Free under 10 contributors. $9 per contributor per month above that. No annual lock-in.',
-  },
-]
-
-function FAQItem({ q, a, isOpen, onToggle }: { q: string; a: string; isOpen: boolean; onToggle: () => void }) {
-  return (
-    <div className="border-b border-border last:border-b-0">
-      <button onClick={onToggle} className="w-full flex items-center justify-between gap-4 py-5 text-left">
-        <span className={cn('text-base md:text-lg font-medium transition-colors', isOpen ? 'text-foreground' : 'text-muted-foreground')}>
-          {q}
-        </span>
-        <span className={cn('shrink-0 w-8 h-8 rounded-full grid place-items-center transition-colors', isOpen ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
-          {isOpen ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-        </span>
-      </button>
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: [0.25, 0.4, 0.25, 1] }}
-            className="overflow-hidden"
-          >
-            <p className="pb-5 text-sm md:text-base text-muted-foreground leading-relaxed max-w-2xl">{a}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
-
-function FAQSection() {
-  const [openIdx, setOpenIdx] = useState<number | null>(0)
-  return (
-    <section id="faq" className="max-w-3xl mx-auto px-6 py-28 md:py-36">
-      <ScrollReveal>
-        <h2 className="text-3xl md:text-4xl font-bold tracking-[-0.02em] text-foreground">Questions, answered.</h2>
-      </ScrollReveal>
-      <ScrollReveal delay={0.1} className="mt-10 rounded-2xl bg-card border border-border px-7 md:px-10 py-2">
-        {FAQ.map((item, i) => (
-          <FAQItem
-            key={item.q}
-            q={item.q}
-            a={item.a}
-            isOpen={openIdx === i}
-            onToggle={() => setOpenIdx(p => (p === i ? null : i))}
-          />
-        ))}
-      </ScrollReveal>
-    </section>
-  )
-}
-
-// ── CTA (C1 contrast band) ───────────────────────────────────────────────────
-
-function CTA() {
-  const navigate = useNavigate()
-  return (
-    <section className="bg-primary text-primary-foreground">
-      <div className="max-w-4xl mx-auto px-6 py-24 text-center">
-        <ScrollReveal>
-          <h2 className="text-4xl md:text-5xl font-bold leading-tight tracking-[-0.02em]">
-            Close Friday, not your laptop.
-          </h2>
-          <p className="mt-4 max-w-md mx-auto opacity-85">
-            Connect your repo. Get this week&rsquo;s folio in five minutes.
-          </p>
-          <button
-            onClick={() => { markLandingSeen(); navigate('/home') }}
-            className="mt-8 inline-flex items-center gap-2 px-7 py-3.5 rounded-md bg-background text-foreground text-sm font-medium group"
-          >
-            <Check className="w-4 h-4" />
-            Start the recap
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-          </button>
-        </ScrollReveal>
-      </div>
-    </section>
-  )
-}
-
-// ── Footer (FT2 column grid, trimmed) ────────────────────────────────────────
-
-function Footer() {
-  return (
-    <footer className="border-t border-border">
-      <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-10">
-        <div className="col-span-2">
-          <span className="font-semibold text-foreground">{APP_NAME}</span>
-          <p className="mt-2 text-sm text-muted-foreground max-w-xs">
-            A weekly folio for engineering managers.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-[0.2em] text-muted-foreground mb-3">Product</h4>
-          <ul className="space-y-2 text-sm">
-            {['Features', 'Pricing', 'Changelog'].map(l => (
-              <li key={l}><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">{l}</a></li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-[0.2em] text-muted-foreground mb-3">Company</h4>
-          <ul className="space-y-2 text-sm">
-            {['About', 'Blog', 'Contact'].map(l => (
-              <li key={l}><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">{l}</a></li>
-            ))}
-          </ul>
-        </div>
-      </div>
-      <div className="border-t border-border">
-        <div className="max-w-6xl mx-auto px-6 py-4 text-xs text-muted-foreground flex justify-between">
-          <span>&copy; {new Date().getFullYear()} {APP_NAME}</span>
-          <a href="https://deep.space" className="hover:text-foreground">Built with DeepSpace</a>
-        </div>
-      </div>
-    </footer>
-  )
-}
-
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
   return (
     <MotionConfig reducedMotion="user">
       <div className="min-h-screen bg-background text-foreground">
-        <FloatingPillNav />
         <Hero />
         <Features />
-        <Workflow />
-        <FAQSection />
-        <CTA />
-        <Footer />
       </div>
     </MotionConfig>
   )

@@ -54,7 +54,7 @@ Install a matching block with `npx deepspace add <feature>`. Catalog names are s
 | `src/pages/` | Generouted pages. `(app)/` mounts providers; `(app)/(protected)/` gates sign-in; extend `_app.tsx`. |
 | `src/themes.ts`, `src/themes.css` | App-specific theme tokens; shipped themes are placeholders. |
 | `src/constants.ts` | `APP_NAME`, immutable `APP_ID`, `SCOPE_ID`, role exports. |
-| `worker.ts` | Hono routes and `__DO_MANIFEST__`. |
+| `worker.ts`, `src/server/` | DO manifest and ordered route assembly; action, HTTP, and realtime owners. |
 
 Core records are envelopes (`recordId`, `data`, metadata); fields live under `.data`:
 

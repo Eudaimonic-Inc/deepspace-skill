@@ -1,6 +1,6 @@
 # Architecture — DOs, scopes, and cross-app proxies
 
-Load this reference when editing `worker.ts`, adding a new Durable Object class, debugging WebSocket routing, wiring cross-app shared scopes (`workspace:*`, `dir:*`, `conv:*`), or understanding scope-ID conventions. Skip it for pure frontend work or app-scoped data only.
+Load when editing `worker.ts` or `src/server/realtime-routes.ts`, adding a Durable Object, debugging WebSockets, or wiring cross-app scopes (`workspace:*`, `dir:*`, `conv:*`). Skip pure frontend or app-scoped data work.
 
 ## Per-app DOs
 
@@ -20,7 +20,7 @@ App Worker (per-app)                 Platform Worker (shared)
 └── Static assets (SPA fallback)
 ```
 
-The scaffolded `AppRecordRoom` already passes your `schemas` to `RecordRoom` — you rarely need to touch `worker.ts`. The one case where you do is cross-app data sharing (below).
+`AppRecordRoom` already passes `schemas` to `RecordRoom`. Edit `worker.ts` for room declarations/route order and `src/server/realtime-routes.ts` for cross-app routing below.
 
 ### Route reservation (`run_worker_first`)
 
@@ -58,7 +58,7 @@ service = "deepspace-platform"   # name of the deployed platform worker
 Use `platformWorkerFetch` from `deepspace/worker` instead of `c.env.PLATFORM_WORKER.fetch(...)` directly — the helper picks the binding in prod and the URL in dev, so the same code works in both environments:
 
 ```typescript
-// worker.ts — replace the single-line app.get('/ws/:roomId', wsRoute(...))
+// src/server/realtime-routes.ts — replace the /ws/:roomId registration
 import { platformWorkerFetch } from 'deepspace/worker'
 
 app.get('/ws/:roomId', async (c) => {
@@ -97,7 +97,7 @@ The `name` field in `wrangler.toml` is the `<name>.app.space` subdomain. It must
 wrangler.toml: `name` "My_App" is not in canonical form. Update it to "my-app" and re-run.
 ```
 
-(The SDK ships a sanitize-and-warn `resolveAppName()` helper, but both commands wrap it in a strict equality gate — don't expect sanitization to rescue a bad name.) Earlier SDKs silently sanitized, which split identity across `[vars].APP_NAME` and deployed bindings — now you fix it once and every surface agrees. Edit the field and re-run.
+Both commands enforce strict equality after `resolveAppName()`; sanitization does not rescue a bad name. Edit the field and re-run.
 
 The `name` is seeded by the `<app-name>` argument at scaffold time but is fully editable afterward — `deploy` reads `wrangler.toml` fresh every run. To pair an arbitrary directory with an arbitrary subdomain, scaffold into the directory you want, then edit `wrangler.toml`'s `name` to the subdomain you want. Don't regenerate or move the scaffold to align them.
 
@@ -105,7 +105,7 @@ The `name` is only the URL: the app's **identity** is the immutable `DEEPSPACE_A
 
 ## Upstream proxy helpers
 
-The scaffolded `worker.ts` already uses these for every cross-worker call. **Do not** replace them with raw `c.env.X.fetch(...)` — `wrangler dev` doesn't surface service bindings cross-process for SDK apps, so the binding is `undefined` locally and the fetch silently fails.
+The scaffolded route owners already use these for every cross-worker call. **Do not** replace them with raw `c.env.X.fetch(...)` — `wrangler dev` doesn't surface service bindings cross-process for SDK apps, so the binding is `undefined` locally and the fetch silently fails.
 
 - `apiWorkerFetch(env, path, init?)` — fetch the api-worker (binding-preferred, URL fallback)
 - `platformWorkerFetch(env, pathOrRequest, init?)` — fetch the platform-worker (binding-preferred, URL fallback). Accepts a `Request` object so you can hand off `c.req.raw` derivatives intact.

@@ -23,8 +23,8 @@ Both schemas are exported from `'deepspace/worker'`. The `create: false` posture
 The streaming pipeline (`POST /api/ai/chat` handler):
 
 1. Verify JWT, look up the chat (404 if missing or owned by another user).
-2. Load history (`loadMessages`) — but **don't write the new user row yet**. Both rows persist together inside `onFinish` so a stream error / client navigate-away leaves zero orphan rows.
-3. Append the in-flight user message in memory; dedup consecutive user messages (defense in depth for legacy chats).
+2. Load history (`loadMessages`) without writing the new user row. Persistence starts only in `onFinish`; a transport failure or zero-step abort that skips it writes nothing. A post-step abort may finish with a partial paired turn.
+3. Append the in-flight user message in memory; dedup consecutive user messages as defense in depth against malformed history.
 4. Run `prepareMessagesWithCompaction`: truncate old tool results, apply cached summary if present, summarize the older half if still over budget, fall back to sliding window on summarizer error.
 5. Build tools (`buildTools` from `src/ai/tools.ts`) and call `streamText({ model, system, messages, tools, stopWhen: stepCountIs(5), abortSignal: c.req.raw.signal, onFinish })`.
 6. On `onFinish`: write user → assistant → metadata, in that order, with per-call retry. If user-write fails after retry, **abort** the assistant write (otherwise the next turn's history reads an assistant row with no preceding user).
@@ -33,42 +33,25 @@ The streaming pipeline (`POST /api/ai/chat` handler):
 
 > **Copilot-template apps already ship this chat surface** — the same ChatPanel lives at `src/components/chat/ChatPanel.tsx`, embedded in the shell's chat dock (`src/components/shell/ChatDock.tsx`). Don't run `add ai-chat` there: the installer doesn't detect the template's copy (different path), so it would install a second, divergent ChatPanel against the same collections. `add ai-chat` is for adding the full-page assistant to starter-template apps.
 
-Installs three files into the scaffolded app:
+Installs five files into the scaffolded app:
 
-- `src/components/ChatPanel.tsx` — reusable chat surface. Renders `useQuery('ai-messages')` + an in-flight overlay during the stream. Owns model picker, abort button, and Markdown rendering (`react-markdown` + GFM + `rehype-highlight`).
-- `src/pages/(app)/(protected)/assistant.tsx` — full-page assistant with a slide-in chat history rail (the feature's route is protected, so the installer places it in the gated group).
-- `src/schemas/ai-chat-schema.ts` — re-exports `aiChatSchemas = [AI_CHATS_SCHEMA, AI_MESSAGES_SCHEMA]`. Spread into `src/schemas.ts`'s `schemas` array (the feature.json's `schema.spreadOperator: true` does this automatically on install).
+- `src/components/ChatPanel.tsx` — composes the message list, model picker, composer, abort/retry controls, `useQuery('ai-messages')`, and in-flight overlay.
+- `src/components/ChatPanel.messages.tsx` — memoized message, Markdown, tool-status, empty, and thinking renderers.
+- `src/components/ChatPanel.stream.ts` — stream transport plus the pure overlay reducer; owns auto-create, abort, retry, SSE errors, and tool-call lifecycle.
+- `src/pages/(app)/(protected)/assistant.tsx` — protected full-page assistant with conversation history, create, rename, delete, and resize UI.
+- `src/schemas/ai-chat-schema.ts` — exports `aiChatSchemas = [AI_CHATS_SCHEMA, AI_MESSAGES_SCHEMA]`; the installer spreads it into `src/schemas.ts`.
 
 `feature.json` declares the scaffold dependencies (`react-markdown`, `remark-gfm`, `remark-breaks`, `rehype-highlight`, `highlight.js`) so `npx deepspace add ai-chat` runs `npm install` for them.
 
 **`ChatPanel` is meant to be embedded.** Pass `chatId={null}` to auto-create on first send and `onChatCreated` to track the new id. Pass `disabled` while a parent-owned create is in flight so the panel doesn't kick off its own duplicate auto-create. Read its prop docstring at install time.
 
+Persistent mutations arrive live through `useQuery`; the stream hook overlays the pending user/assistant turns immediately, then `ChatPanel` removes them as matching `recordId`s arrive. `X-Asst-Id` reconciles the pending assistant without relying on client clocks. Stop or transport failure removes an empty pending assistant but preserves partial text/tool rows already shown; switching away from a real chat aborts and clears its overlay. Top-level failures render an alert with **Retry** (re-sends the last content); tool input/output failures stay inline on their tool row.
+
 ## Customization
 
 ### Switch model or provider
 
-Edit `ALLOWED_MODELS` in `src/ai/chat-routes.ts`:
-
-```typescript
-const ALLOWED_MODELS: Record<string, 'anthropic' | 'openai' | 'cerebras'> = {
-  'claude-opus-4-8':    'anthropic',
-  'claude-sonnet-5':    'anthropic',
-  'claude-haiku-4-5':   'anthropic',
-  'gpt-5.6-sol':        'openai',
-  'gpt-5.6-terra':      'openai',
-  'gpt-5.6-luna':       'openai',
-  'gpt-oss-120b':       'cerebras',
-  // Prior generation — kept served so saved picks don't 400:
-  'claude-sonnet-4-6':  'anthropic',
-  'claude-opus-4-7':    'anthropic',
-  'gpt-5.4':            'openai',
-  'gpt-5.4-mini':       'openai',
-  'gpt-5.4-nano':       'openai',
-}
-const DEFAULT_MODEL = 'claude-sonnet-5'
-```
-
-Unknown `modelId`s **400 explicitly** — there's no silent fallback to the default. (Silent fallback used to mask drift between the worker allowlist and the client picker.)
+Edit `ALLOWED_MODELS` in `src/ai/chat-routes.ts`. Shipped IDs: Anthropic `claude-opus-4-8`, `claude-sonnet-5` (default), `claude-haiku-4-5`; OpenAI `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna`; Cerebras `gpt-oss-120b`. Unknown IDs return 400; there is no silent fallback.
 
 > **Keep `ChatPanel`'s `DEFAULT_MODELS` and `src/ai/chat-routes.ts`'s `ALLOWED_MODELS` in sync.** The picker shows whatever `DEFAULT_MODELS` lists; the worker only accepts whatever `ALLOWED_MODELS` keys. Adding a new model is a 2-file edit. Drift produces a 400 when the user picks the new option.
 
@@ -104,7 +87,7 @@ Augment `buildTools` in `src/ai/tools.ts` with `tool({ description, inputSchema:
 
 ```typescript
 DEFAULT_CONTEXT_CONFIG = {
-  contextBudget: 240_000,    // chars — ≈ 60–80K tokens. Safe for 200K+ models (Sonnet/Opus, GPT-4.1).
+  contextBudget: 240_000,    // chars — ≈ 60–80K tokens. Safe for 200K+ models.
   toolResultCap: 30_000,     // bytes — per-tool-result cap (`capToolResultSize`).
   keepRecentToolResults: 5,  // recent assistant turns whose tool results stay un-truncated.
   minKept: 10,               // sliding-window floor.
@@ -194,7 +177,7 @@ test('POST /api/ai/chat streams + persists', async ({ request }) => {
   const res = await request.post('/api/ai/chat', {
     headers: { Authorization: `Bearer ${token}` },
     data: {
-      chatId: chat.id,
+      chatId: chat.recordId,
       userMessageId: `umsg-${Date.now()}`,
       content: 'Hi',
     },
@@ -212,7 +195,7 @@ For the auth-gating side, follow the standard pattern in `references/testing.md`
 
 ## Things that bite
 
-- **Transactional persistence is one direction.** Order is user → assistant → metadata. If user-write fails twice, the assistant write is **skipped** (otherwise the next turn would mis-pair history). Don't reorder.
+- **Persistence is ordered, not atomic.** Order is user → assistant → metadata. If the user write fails twice, the assistant write is skipped, preventing an assistant-only row. The reverse remains possible if the assistant write fails after the user succeeds; retries reduce but cannot eliminate it. Don't reorder.
 - **Concurrent multi-tab writes to the same `chatId`** can interleave. The DO serializes individual writes but not the per-request 3-write group. Realistic impact is rare; documented in `chat-routes.ts` next to the route.
 - **Reasoning models are opt-out at the boundary.** `toUIMessageStreamResponse({ sendReasoning: false })` strips `reasoning-*` chunks. The UI doesn't have a "thinking" disclosure block today; flipping `sendReasoning: true` will leave users staring at a stuck spinner during long thinks.
 - **Don't relax `AI_*_SCHEMA`'s `create: false`.** That's the forged-assistant-row vector.

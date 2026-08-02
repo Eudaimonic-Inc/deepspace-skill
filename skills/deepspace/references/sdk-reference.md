@@ -1,8 +1,6 @@
 # DeepSpace SDK Reference
 
-Load this reference when you need to confirm an export exists, look up a hook signature, pick between two similar APIs (e.g., `useMessages` vs `useConversation`, `usePresence` vs `usePresenceRoom`), or audit the worker / testing surface. Skip it when the topic has its own reference — `auth.md`, `schemas.md`, `server-actions.md`, `ai-chat.md`, `cron.md`, `bindings.md`, `integrations.md`, `testing.md`, `domain.md`, `architecture.md`, `uiux.md`, and `landing-design.md` cover their surfaces in task-shaped depth that this index does not.
-
-Complete surface of what the `deepspace` npm package exports. For exact type signatures, read `node_modules/deepspace/dist/index.d.ts` (frontend), `node_modules/deepspace/dist/worker.d.ts` (worker), `node_modules/deepspace/dist/server.d.ts` (platform-backed server helpers), and `node_modules/deepspace/dist/testing.d.ts` (Playwright fixture). This file is a navigable index — use it to discover what exists, then consult `.d.ts` for signatures.
+Use this index to discover exports or distinguish similar APIs. Load the task-shaped reference (`auth.md`, `schemas.md`, `ai-chat.md`, `bindings.md`, `payments.md`, etc.) for workflows. The authoritative signatures are `node_modules/deepspace/dist/{index,worker,server,testing}.d.ts`; confirm them there rather than guessing.
 
 **Import paths:**
 ```typescript
@@ -43,7 +41,7 @@ import { ... } from 'deepspace/testing'  // Playwright multi-user fixture (test 
 ### Records (data layer)
 
 **Providers**
-- `RecordProvider` — WebSocket + store. Props: `roomId`, `schemas` (single-scope: ignored — pass to `RecordScope`), `wsUrl`, `allowAnonymous`, `getAuthToken`, `onWriteError`. `onWriteError` (`(e: { kind: 'permission' | 'validation'; title: string; detail: string }) => void`) is the **only** surface where a rejected optimistic write appears — the scaffold wires it to toasts in `(app)/_layout.tsx`; keep that wiring (unhandled, it just `console.error`s once per unique error). Scaffolds created before this prop existed lack the wiring — retrofit it as shown in `auth.md`.
+- `RecordProvider` — WebSocket + store. Props: `roomId`, `schemas` (single-scope: ignored — pass to `RecordScope`), `wsUrl`, `allowAnonymous`, `getAuthToken`, `onWriteError`. `onWriteError` (`(e: { kind: 'permission' | 'validation'; title: string; detail: string }) => void`) is the **only** surface where a rejected optimistic write appears — keep the scaffold's toast wiring in `(app)/_layout.tsx` (otherwise it only `console.error`s once per unique error).
 - `RecordScope` — binds a scope (app room or shared). Props: `roomId`, `schemas`, `appId`, `sharedScopes`, `wsUrl`, `wsPathPrefix`, `isolated`.
 - `ScopeRegistryProvider` — required once near the root if using shared scopes.
 
@@ -95,73 +93,13 @@ Backed by the `dir:<appId>` global DO. Each hook returns its records array plus 
 - `useCanvas(roomId)` — connects to a `CanvasRoom` DO. Returns `{ shapes, viewports, connected, canWrite, addShape, moveShape, resizeShape, deleteShape, updateShape, setViewport, undo, redo }`. `canWrite` is the RBAC gate — defaults false until the server AUTH frame lands, and every write callback **silently no-ops when false** (use it to disable shape/draw controls for viewers). `setViewport` is exempt — viewport broadcasts stay open for viewers since they're presence-like. Shape and viewport types are `CanvasShapeClient` and `ViewportClient`.
 - `usePresence(options?)` — **online/offline derivation, NOT cursor presence.** Reads `lastSeenAt` from the users collection in the current `RecordScope`, sends a heartbeat every 60s so the server refreshes the caller's `lastSeenAt`, and returns `{ isOnline, getLastSeen, users }`. `isOnline(userId)` is `true` if the user heartbeated within `options.timeoutMs` (default 5 minutes). For cursor / typing / viewport state, use `usePresenceRoom` instead.
 - `usePresenceRoom(scopeId)` — **the cursor / typing / viewport hook.** Connects to a dedicated `PresenceRoom` DO at `/ws/presence/:scopeId`. Pass any string (`canvas:${id}`, `thread:${channelId}`, `doc:${docId}`). Returns `{ peers, connected, updateState(state) }`. `updateState` merges, so you can call it for cursor (`{ cursor: { x, y } }`), typing (`{ typing: true }`), viewport, etc. Each peer is `PresencePeerClient` (`{ userId, userName, userEmail, userImageUrl?, joinedAt, state }`). Self is excluded from `peers`.
-- `useGameRoom(roomId)` — connects to a `GameRoom` DO at `/ws/game/:roomId`. Returns `{ state, tick, players, running, connected, canWrite, sendInput(action, data?), setReady(), startGame(), endGame() }`. `canWrite` is the RBAC gate — defaults false until the server AUTH frame lands, and `sendInput` / `setReady` / `startGame` / `endGame` **silently no-op when false** (use it to disable lobby + input UI for spectators). Each player is `{ userId, userName, ready, connectedAt, data }`. State migration on schema bumps lives in the worker — override `onHydrateState(stored)` on the DO subclass.
+- `useGameRoom(roomId)` — connects to `GameRoom` at `/ws/game/:roomId`; this binding/route is **not scaffolded** and must be added with the DO manifest entry. Returns `{ state, tick, players, running, connected, canWrite, sendInput(action, data?), setReady(), startGame(), endGame() }`. Writes silently no-op until `canWrite`; disable spectator controls. Each player is `{ userId, userName, ready, connectedAt, data }`. Override worker `onHydrateState(stored)` for migrations.
 - `useCronMonitor(roomId)` — admin/monitor stream for the `AppCronRoom` DO. Pass `SCOPE_ID` from `src/constants.ts` (`app:<APP_ID>`) for the app's default cron room. Returns `{ tasks, history, connected, canWrite, trigger(name), pause(name), resume(name) }`. Each task is `{ name, intervalMinutes, schedule, timezone, paused, lastRunAt, nextRunAt }`. `trigger(name)` fires `onTask(name)` immediately on the DO — same path as the alarm scheduler — so a "Run now" button is the right way to E2E-test cron without waiting for the schedule. `canWrite` defaults false until the server AUTH frame lands, and `trigger` / `pause` / `resume` **silently no-op when false**. **The DO enforces the role passed by the wsRoute resolver** — the scaffolded `/ws/cron/:roomId` passes `role: 'member'` for any signed-in connection (anonymous = viewer = `canWrite: false`), so by default any signed-in user can fire owner-billed tasks. For owner-only access, replace the wsRoute helper with an inline handler that resolves role from app state (e.g., only return `role: 'member'` when the JWT subject matches `OWNER_USER_ID`). For finer client-side gating, also disable the controls by `useUser().user?.role === 'admin'` (note `user?.role`, not `role` — `useUser()` returns `{ user, isLoading, refetch }`, fields are nested).
 - `useJobs(roomId)` — enqueue + track durable background jobs against the `AppJobRoom` DO. Pass `SCOPE_ID` from `src/constants.ts` (`app:<APP_ID>`) for the app's default job room. Returns `{ jobs, connected, enqueue(type, payload?, opts?), getJob(id), cancel(id), retry(id) }`. `enqueue` returns `Promise<jobId>` (resolves once the server acks, rejects after 10s if no ack). Each job is `JobView` (`{ id, type, status: 'queued'|'running'|'succeeded'|'failed'|'canceled', payload?, result?, error?, progress?, progressMessage?, attempts, maxAttempts, enqueuedAt, startedAt?, completedAt?, enqueuedBy? }`). The DO pushes a snapshot on connect plus a `JOB_UPDATE` for every state change — no polling. **Worker-side enqueue** (HTTP routes, cron, server actions) goes through the `enqueueJob(env.JOB_ROOMS, ...)` helper instead, since those run in a different isolate from the DO. See `references/jobs.md` for the scaffold pattern.
 
 > No LiveKit **room** hook ships — for LiveKit audio/video use the `livekit/*` endpoints (`create-room`, `generate-token`, `list-rooms`, `delete-room`, `settle-room`) via `integration.post(...)` — see `references/integrations.md`. For **OpenAI Realtime voice**, the `useVoiceAgent` hook does ship (see "Voice (OpenAI Realtime)" below).
 
-#### Worked examples
-
-**Collaborative text input** — bind a `<textarea>` to a Yjs text field and multiple users editing the same record see each other's keystrokes live:
-
-```tsx
-import { useYjsText } from 'deepspace'
-
-function DocEditor({ docId }: { docId: string }) {
-  const { text, setText, synced, canWrite } = useYjsText('docs', docId, 'body')
-  return (
-    <textarea
-      value={text}
-      onChange={e => setText(e.target.value)}
-      disabled={!synced || !canWrite}
-    />
-  )
-}
-```
-
-`useYjsText` returns `{ text, setText, synced, canWrite }` — there is no `loading`. Gate the input on `!synced || !canWrite` instead.
-
-**Online / offline** — derived from `lastSeenAt` heartbeats:
-
-```tsx
-import { usePresence } from 'deepspace'
-
-function OnlineList() {
-  const { users, isOnline, getLastSeen } = usePresence()
-  return users.map(u => (
-    <div key={u.id}>
-      <span>{u.name}</span>
-      <span>{isOnline(u.id) ? '🟢 online' : `⚪ last seen ${getLastSeen(u.id)}`}</span>
-    </div>
-  ))
-}
-```
-
-**Cursors / typing / viewport** — use `usePresenceRoom`, scoped to the surface you care about:
-
-```tsx
-import { usePresenceRoom } from 'deepspace'
-
-function CursorOverlay({ canvasId }: { canvasId: string }) {
-  const { peers, updateState } = usePresenceRoom(`canvas:${canvasId}`)
-  return (
-    <div onMouseMove={e => updateState({ cursor: { x: e.clientX, y: e.clientY } })}>
-      {peers.map(p => {
-        const cursor = p.state.cursor as { x: number; y: number } | undefined
-        if (!cursor) return null
-        return (
-          <div key={p.userId} style={{ position: 'absolute', left: cursor.x, top: cursor.y }}>
-            {p.userName}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-```
-
-Exact return shapes vary — check `node_modules/deepspace/dist/index.d.ts` for the precise types (`UseYjsTextResult`, `UsePresenceOptions`, etc.).
+Usage boundaries: `useYjsText` returns `{ text, setText, synced, canWrite }` (no `loading`), so disable editing until `synced && canWrite`. Use `usePresence` for heartbeat-derived online state and `usePresenceRoom(scopeId)` for ephemeral cursor, typing, or viewport state. Check `index.d.ts` for exact result types.
 
 **Sync primitives (low-level, rarely needed)**
 - `createEncoder` / `createDecoder`
@@ -265,13 +203,6 @@ For the `requiresOAuth` response shape and client retry pattern, see `references
 - `DEFAULT_USER_COLORS` — frozen 12-color palette of cursor/avatar tints.
 - `getUserColor(userId, palette?)` — deterministic hash → palette index. Same userId always returns the same color across sessions. Use it for cursor dots in `usePresence` / `usePresenceRoom`, avatar fallbacks, and "who's typing" pills. Pass a custom palette to match a brand.
 
-### UI primitives (SDK-provided)
-
-> ⚠️ The scaffolded app usually includes its own versions of these in `src/components/ui/`. Check `_app.tsx` to see which `ToastProvider` is wrapped in the tree before importing `useToast`. Mixing SDK and local contexts produces `useToast must be used within ToastProvider`.
-
-- `ToastProvider` — context for toasts.
-- `useToast()` — returns `{ success, error, warning, info }` (or equivalent).
-
 ### Environment
 
 - `detectEnvironment()` / `getEnvironmentConfig()` — `'dev' | 'preview' | 'prod'`.
@@ -298,7 +229,7 @@ For the `requiresOAuth` response shape and client retry pattern, see `references
 
 ### Base classes
 
-The scaffold declares five DO classes in `__DO_MANIFEST__` and extends these bases in `worker.ts` — do not add a new DO class without updating the manifest and wrangler migrations.
+The scaffold declares six DO classes in `__DO_MANIFEST__` and extends these bases in `worker.ts` — do not add one without updating the manifest and wrangler migrations.
 
 - `BaseRoom` — abstract parent of all DOs below. Subclass when none of the specialized rooms fit (rare). Provides the WebSocket plumbing, identity parsing from JWT-verified URL params, and connection lifecycle. (JWT verification itself happens upstream in the worker's `wsRoute` before the request reaches the DO; BaseRoom reads `userId` / `userName` / `userEmail` / `userImageUrl` / `role` from `searchParams`.) Type: `UserAttachment` for authenticated socket attachments.
 - `RecordRoom` — primary app data DO. Extend with your `schemas`. Configurable via `RecordRoomConfig` (the second-arg shape in the constructor below):
@@ -317,7 +248,7 @@ The scaffold declares five DO classes in `__DO_MANIFEST__` and extends these bas
 - `JobRoom` — durable background-job queue DO. Construct with optional `JobRoomConfig` and override `onJob(job, ctx)`. Handler returns the result (captured as `job.result`) or throws to fail; `ctx` exposes `progress(0..1, msg?)`, `continue(state, { afterMs? })` (resume on next alarm for >15-min jobs), and `signal: AbortSignal` (fires on client cancel). Cross-isolate enqueue via the exported `enqueueJob(namespace, roomId, type, payload, opts?)` helper. Types: `Job`, `JobContext`, `JobStatus`, `JobRoomConfig`. See `references/jobs.md` for the scaffold pattern.
 - `GameRoom` — turn-tick / sim-tick game-loop DO. Configurable via `GameRoomConfig`. Types: `Player`, `GameInput`. State migration via `onHydrateState(stored)` — see "Game rooms (state migration)" below.
 
-Each has its own WebSocket route wired in `worker.ts` (`/ws/yjs/:docId`, `/ws/canvas/:docId`, `/ws/presence/:scopeId`, `/ws/cron/:roomId`, `/ws/jobs/:roomId`, `/ws/game/:roomId`).
+The scaffold wires Record, Yjs, Canvas, Presence, Cron, and Job routes (`/ws/:roomId`, `/ws/yjs/:docId`, `/ws/canvas/:docId`, `/ws/presence/:scopeId`, `/ws/cron/:roomId`, `/ws/jobs/:roomId`). `GameRoom` is available but not scaffolded; add its manifest entry, binding/migration, and route together.
 
 > No `MediaRoom` DO and no LiveKit room hook — for LiveKit audio/video use the `livekit/*` integration endpoints (see `references/integrations.md`). OpenAI Realtime voice, by contrast, does have a client hook: `useVoiceAgent` (see the frontend "Voice (OpenAI Realtime)" section).
 
@@ -325,7 +256,7 @@ Each has its own WebSocket route wired in `worker.ts` (`/ws/yjs/:docId`, `/ws/ca
 
 - `DOManifest` / `DOManifestEntry` — typed shape of `__DO_MANIFEST__` (the `as const satisfies DOManifest` literal in scaffolded `worker.ts`).
 - `DOBindings<typeof __DO_MANIFEST__>` — derives the `Env` interface's DO bindings from the manifest at compile time. The scaffold's `Env extends DOBindings<typeof __DO_MANIFEST__>` is what makes `env.RECORD_ROOMS`, `env.YJS_ROOMS`, etc. typed correctly.
-- `DEFAULT_DO_MANIFEST` — fallback manifest with **only two** entries (`RECORD_ROOMS` + `YJS_ROOMS`), used when an app doesn't export `__DO_MANIFEST__`. **Not** the scaffold's manifest — the scaffold's `worker.ts` declares its own 5-class set (`AppRecordRoom`, `AppYjsRoom`, `AppCanvasRoom`, `AppPresenceRoom`, `AppCronRoom`). Useful when programmatically building a manifest from scratch.
+- `DEFAULT_DO_MANIFEST` — fallback with only `RECORD_ROOMS` + `YJS_ROOMS`; it is not the scaffold manifest, which adds Canvas, Presence, Cron, and Job rooms.
 
 ### Game rooms (state migration)
 
@@ -335,7 +266,7 @@ Subclasses of `GameRoom` can override `onHydrateState(stored)` to migrate persis
 - **Version bumps** — transform old shapes to new ones.
 - **Fresh starts** — discard stale blobs and return a default state.
 
-Omit the override to keep the legacy behavior (load the stored blob as-is).
+Without the override, the stored blob loads as-is.
 
 ### Auth
 - `verifyJwt(config, token)` — `config: JwtVerifierConfig` (`{ publicKey, issuer, audience, authorizedParties?, clockSkewMs? }`), `token: string | null | undefined`. Returns `Promise<VerifyOutcome>` — a `{ result: VerifyResult | null, error? }` envelope; **does not throw** on invalid tokens. Extract the JWT from the request yourself (e.g., `Authorization: Bearer <token>` or session cookie) before calling.
@@ -383,7 +314,7 @@ Pure decoders for the Vercel AI SDK v5 `toUIMessageStreamResponse` SSE body. Use
 ### Server action types
 - `ActionHandler<TEnv = Record<string, unknown>>` — `(ctx: ActionContext<TEnv>) => Promise<ActionResult>`. The `TEnv` generic lets you type the worker's `env` bindings — the scaffold uses `ActionHandler<Env>` so `ctx.env.<binding>` is typed inside handlers. Defaults to a loose record so unparameterized handlers compile.
 - `ActionContext<TEnv>` — `{ userId, params, tools, env }`. `userId` is the caller (verified JWT subject). `params` is the JSON body. `env` is the worker bindings (use it for owner-only gates: `ctx.userId === ctx.env.OWNER_USER_ID`). `tools` is `ActionTools`.
-- `ActionTools` — `{ create<T>, update<T>, remove, get<T>, query<T>, integration<T> }`. Each method is generic over its row shape; results for the record ops are typed per op (`MutateActionData` / `GetActionData<T>` / `QueryActionData<T>`). `tools.integration<T>(endpoint, data?)` is the odd one out — it returns `Promise<ActionResult<T>>` where `T` is the integration's raw response body, **with no envelope wrapper**. All bypass caller RBAC — the `X-App-Action` header marks the call as the app itself. All five `tools.*` ops are RBAC-bypassing, including `tools.query` (parity fixed in 0.3.x; earlier SDKs filtered query results by caller permissions).
+- `ActionTools` — `{ create<T>, update<T>, remove, get<T>, query<T>, integration<T> }`. Each method is generic over its row shape; results for the record ops are typed per op (`MutateActionData` / `GetActionData<T>` / `QueryActionData<T>`). `tools.integration<T>(endpoint, data?)` returns `Promise<ActionResult<T>>`, where `T` is the raw integration body with no extra response envelope. Every `tools.*` operation bypasses caller RBAC because `X-App-Action` marks it as the app.
 - `ActionResult<TData = unknown>` — discriminated union: `{ success: true; data: TData; error?: never } | { success: false; data?: never; error: string }`. Narrow with `if (result.success) { result.data … }` — TS narrows `data` to the per-op shape (`{ records, count }` for query, `{ record }` for get, `{ recordId }` for mutations). For `tools.integration`, `result.data` **is the integration body directly** — an OpenAI call yields `result.data.choices`, a Freepik image call yields `result.data.images`, etc. There is no `.response` / `.status` wrapper.
 
 ### AI tool helpers (from `deepspace/worker`)
@@ -459,7 +390,7 @@ Worker-side helpers that call shared platform services on the app's behalf and s
 
 ### Subscriptions & charges (payments)
 - `requireSubscription(c, { tier? | atLeast? })` — gate route; throws `SubscriptionRequiredError` if the caller's tier doesn't match. See `references/payments.md`.
-- `getSubscription(c)`, `cancelSubscription(c, opts)`, `refundInvoice(c, opts)` — server-side admin/cancel/refund helpers. `cancelSubscription` returns `{ success, canceled, failures, atPeriodEnd, hasMore }` and batches at 50 — loop while `hasMore === true` to cancel every matching subscription (the underlying `cancel_at_period_end` flag is idempotent, so re-flagging is a safe no-op). See `references/payments.md`.
+- `getSubscription(c)`, `cancelSubscription(c, opts)`, `refundInvoice(c, opts)` — read, cancel, and refund helpers; cancellation batches at 50 and reports `hasMore`. See `references/payments.md` for authorization and retry rules.
 - Error classes: `SubscriptionRequiredError`, `SubscriptionAuthError`, `CancelSubscriptionError`, `RefundError`.
 
 > The `/_deepspace/*` browser proxy in the starter `worker.ts` is what makes the client-side `useSubscription` / `useCheckout` hooks reach these handlers without exposing `APP_IDENTITY_TOKEN` to the browser. Don't strip it from `worker.ts` or `wrangler.toml`'s `run_worker_first`.
@@ -477,15 +408,3 @@ Imported only inside Playwright spec files. See `references/testing.md` for the 
 - `newSignedInContext(email, browser)` — one-liner for a signed-in `BrowserContext`.
 - `getStatePathForEmail(email)` / `readCachedState(path)` — direct cache access.
 - Types: `MultiplayerUser`, `UsersFixture`, `TestAccount`, `EnsureStorageStateOptions`.
-
----
-
-## Not listed here?
-
-Four places to look:
-1. `node_modules/deepspace/dist/index.d.ts` — authoritative type surface for frontend.
-2. `node_modules/deepspace/dist/worker.d.ts` — authoritative type surface for worker.
-3. `node_modules/deepspace/dist/server.d.ts` — authoritative type surface for the platform-backed server helpers.
-4. `node_modules/deepspace/dist/testing.d.ts` — authoritative type surface for the Playwright fixture.
-
-If a hook or type isn't in this reference, it probably exists in `.d.ts`. Read the declaration to get the exact signature. Do not guess.

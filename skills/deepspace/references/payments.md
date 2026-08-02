@@ -1,8 +1,6 @@
 # Payments — subscriptions, one-time products, refunds, cancellation
 
-Load this reference when adding a paywall, pricing page, "Upgrade" button, or gating any feature behind a plan / tier (Pro, premium, etc.); when wiring subscriptions, one-time products, tips, donations, trials, refunds, or cancellation; or when the user mentions **Stripe**, **billing**, **payments**, **paywall**, **subscription**, or **monetization**. **Also load before touching `useSubscription` / `useCheckout` / `requireSubscription` / `cancelSubscription` / `refundInvoice` — and before installing `stripe` / `@stripe/stripe-js`, which you should not do; the SDK already handles Stripe.** Skip it only for apps that don't charge money, or for developer-side **Stripe Connect onboarding** (payouts UI for the app developer — lives in the DeepSpace dashboard at `/earnings`, not in app code).
-
-DeepSpace ships a built-in Stripe-backed billing surface. The platform charges the customer; an admin transfers the developer's share to their connected account on demand. You declare what you sell in two manifest files, then call SDK hooks. Developer onboarding (Connect) is handled in the dashboard `/earnings` page — apps can declare and sell before the dev connects; payouts wait until they do.
+Load this reference for any money flow or before touching the payment hooks/helpers. Do not install Stripe libraries: declare the catalog in app manifests and use the SDK. Developer Connect onboarding lives only in the DeepSpace `/earnings` dashboard; apps may sell before onboarding, but payout waits for it.
 
 ## 1 — Declare what you sell
 
@@ -24,7 +22,7 @@ export const subscriptionPlans = [
 ] as const
 ```
 
-- Keep `slug` stable — subscribers reference it.
+- Keep `slug` stable; rename `name`, not `slug`, because subscribers and gates reference it.
 - `priceCents: 0` = free tier, never hits Stripe.
 - Minimums exist because Stripe's per-charge fee ($0.30 + 2.9%) consumes sub-dollar charges.
 
@@ -65,7 +63,7 @@ function Paywall() {
 | `isAtLeast(slug)` | Rank ≥ target slug **AND** entitled. |
 | `interval` | `'month' \| 'year' \| null`. |
 | `currentPeriodEnd`, `cancelAtPeriodEnd`, `trialEndsAt` | Read-only state. |
-| `plans` | Plan catalog — pass straight to `<PricingTable plans={sub.plans} />`. |
+| `plans` | Plan catalog for `<PricingTable>`; its required `onSelect(slug, interval)` should call `subscribe`. |
 | `subscribe(slug, { interval?, returnUrl?, cancelUrl? })` | Starts Checkout. Auto-redirects. |
 | `openPortal(returnUrl?)` | Stripe Billing Portal for self-service (change card, cancel). |
 | `refresh()` | Re-pull `/me`. |
@@ -133,8 +131,8 @@ import { cancelSubscription, CancelSubscriptionError } from 'deepspace/server'
 await cancelSubscription(c, { userId: 'user_abc' })
 
 // Everyone on a retired plan:
-let res = await cancelSubscription(c, { planSlug: 'legacy_pro', atPeriodEnd: true })
-while (res.hasMore) res = await cancelSubscription(c, { planSlug: 'legacy_pro' })
+let res = await cancelSubscription(c, { planSlug: 'retired_pro', atPeriodEnd: true })
+while (res.hasMore) res = await cancelSubscription(c, { planSlug: 'retired_pro' })
 ```
 
 - Requires the inbound `Authorization` header (caller JWT). Platform verifies the JWT subject owns the app.
@@ -161,39 +159,11 @@ app.post('/api/admin/refund', requireMyAdmin, async (c) => {
 - Constraints: 90-day window from `paidAt`, 50/24h per app, no overdraw.
 - Dashboard-initiated refunds reconcile automatically.
 
-## 6 — Common recipes
+## 6 — Before shipping
 
-**Free trial.** Add `trialDays: 7` to the plan in `subscriptions.ts`; redeploy. Customers see `status: 'trialing'`, `trialEndsAt` populated. `entitled` is `true` during trial.
-
-**Annual toggle.** `sub.subscribe('pro', { interval: 'year' })` — Checkout uses the yearly price.
-
-**Pricing table.** `<PricingTable plans={sub.plans} />` — already wired to the catalog.
-
-**Custom return URLs.** All redirect-bound calls accept `{ returnUrl, cancelUrl }`; defaults to current page.
-
-## 7 — Gotchas (read before shipping)
-
-- **The browser must attach `Authorization: Bearer <jwt>` to every gated request.** The server helpers (`requireSubscription`, `refundInvoice`, `cancelSubscription`) read the JWT off the inbound request and forward it to the platform — they do not mint or fetch one themselves. If the browser fetch omits the header, the helper throws `SubscriptionAuthError` (HTTP 401). Wire it once in a fetch wrapper: `headers: { Authorization: 'Bearer ' + await getAuthToken() }`.
-
-- **"Tier" and "entitled" are not the same thing — never gate on `tier` alone.** *Tier* = which plan slug the user signed up for (e.g. `'pro'`). *Entitled* = whether they currently have access to paid features. A user whose card just failed has `tier: 'pro'` **and** `status: 'past_due'` — recorded as Pro, but Stripe is retrying their card and they should not get access. The free tier is always entitled. Use `sub.hasTier('pro')` / `sub.isAtLeast('pro')`, which check both tier **and** status. A bare `sub.tier === 'pro'` check leaks paid features to past-due, canceled, and unpaid users.
-
-- **Ad-hoc charges cannot be used to unlock features later.** Ad-hoc mode (`chargeOnce({ amount, name })`) creates a purchase row with `productId: null`, so there is no entitlement key to look up afterwards — `ownsProduct(id)` and `useCheckout({ productId }).owned` will never report true for ad-hoc payments. Use ad-hoc only when the value is the transaction itself (tips, donations, "name your price"). For anything that should grant durable access, declare a row in `src/products.ts` and use product mode (`chargeOnce({ productId })`).
-
-- **Below-minimum prices are rejected at deploy time, not at runtime.** Minimums: $3/mo, $12/yr, $1.00 one-time. If a manifest entry is below these, `deepspace deploy` fails the sync step with an error and nothing is created on Stripe — Stripe's per-charge fee ($0.30 + 2.9%) would consume most of the charge and leave nothing for the developer. Raise the price or remove the plan.
-
-- **Do not build any Stripe Connect / onboarding / bank-account UI in your app.** Connect onboarding is for the *developer* of the app, not the end-user — and it happens entirely in the DeepSpace dashboard at `/earnings`, outside the app. There is no SDK hook, component, or endpoint for it because no end-user ever sees it. **Your app can sync plans, run checkouts, and accept money before the developer has connected** — the funds accumulate on the platform balance, and an admin transfers them once the developer finishes onboarding in the dashboard.
-
-- **The local subscription/purchase row reconciles ~1-2 seconds after Checkout returns.** When the customer comes back from Stripe Checkout to your `returnUrl`, the local row hasn't necessarily caught up yet — the platform updates it via a Stripe webhook fired moments later. Call `sub.refresh()` / `co.refresh()` once on return; if it still shows stale data, wait a beat and refresh again on a user action or short timeout. Avoid a tight `while` retry loop, which will race the webhook handler and spam the platform.
-
-- **Never rename a plan's `slug` — change the `name` instead.** The `slug` is the stable identifier for existing subscribers, server-side gates (`isAtLeast('pro')`), and the underlying Stripe Product. Renaming a slug on the next deploy is interpreted as "delete old plan, create new plan" — existing subscribers stay billed on the old (now-orphaned) Stripe Price and the CLI will warn you and ask whether to cancel them at period end. For pure branding changes, edit the `name` field; the `slug` is for code, not for display.
-
-- **Tax code is per-plan, not per-price.** A plan that offers both monthly and yearly uses one `taxCode` for both intervals. There is no way to set a different code per price; the sync route ignores any such attempt. If you need different tax treatment for different products, model them as separate plans (or separate one-time products).
-
-## 8 — Surface map (file → purpose)
-
-| File | What |
-|---|---|
-| `src/subscriptions.ts` | Plan manifest (synced on deploy). |
-| `src/products.ts` | One-time product manifest. |
-| `deepspace` (client) | `useSubscription`, `useCheckout`, `<PricingTable>`. |
-| `deepspace/server` | `requireSubscription`, `getSubscription`, `refundInvoice`, `cancelSubscription`; error classes `SubscriptionRequiredError`, `SubscriptionAuthError`, `RefundError`, `CancelSubscriptionError`. |
+- Use `trialDays` for trials, `subscribe(slug, { interval: 'year' })` for annual checkout, and `{ returnUrl, cancelUrl }` to override redirect defaults. Wire pricing with `<PricingTable plans={sub.plans} currentTier={sub.tier} onSelect={(slug, interval) => sub.subscribe(slug, { interval })} />`.
+- Client requests to gated/admin routes must attach `Authorization: Bearer <jwt>`; server helpers forward but never mint it.
+- Gate with `hasTier` / `isAtLeast`, not `tier`; ad-hoc charges have no durable entitlement. These boundaries are described at their APIs above.
+- Catalog minimums ($3/month, $12/year, $1 one-time) are enforced during deploy sync.
+- Checkout return can precede webhook reconciliation by about 1–2 seconds. Refresh once, then retry on a short delay or user action; never tight-loop.
+- A `taxCode` applies to the whole plan, not separately to monthly and annual prices. Use separate plans when tax treatment differs.
