@@ -2,12 +2,16 @@ _Load for deploy lineage, release history, rollback, or `dirty_worktree` / `behi
 
 # Releases and rollback
 
-Deploy is commit-first. By default it syncs a normal branch before shipping and records the commit in an append-only release row.
+Deploy is commit-first and records the commit in an append-only release row.
+For DeepSpace source it publishes the normal branch automatically. For GitHub
+source it never writes GitHub: the exact local HEAD must already be pushed to
+the configured GitHub remote.
 
 - A dirty checkout is refused before build. Commit the change, using a workspace for WIP.
-- A workspace deploy requires its exact HEAD to have been published with `workspace sync`.
+- A DeepSpace workspace deploy requires its exact HEAD to have been published with `workspace sync`.
 - `behind_trunk` and `stale_base` prevent silently replacing newer live work. Follow the supplied action or integrate deliberately; use `--ignore-stale` only when the user explicitly wants the older tree.
-- `--no-push` intentionally records no commit lineage. Use it only when the user accepts an unrecoverable source relationship.
+- `--no-push` is legacy compatibility, not normal source selection. Do not use
+  it to bypass a GitHub or DeepSpace authority refusal.
 
 ```bash
 npx deepspace releases [--limit N]

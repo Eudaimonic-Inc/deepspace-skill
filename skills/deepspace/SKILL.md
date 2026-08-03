@@ -77,7 +77,12 @@ npx deepspace dev kill
 
 Run tests after runtime-affecting changes; shared behavior needs a two-user spec. Before a first deploy, replace placeholder home/theme/browser primitives per `references/uiux.md`.
 
-Each app has a Git remote named `space`. Use workspaces for parallel WIP, sync their exact HEAD before deploy, and treat rollback as bundle-retention-dependent. Load the narrow version-control, coordination, release, or GitHub reference below rather than one omnibus guide.
+Each app has exactly one authoritative Git repository: packaged DeepSpace source
+or manually owned GitHub source. Inspect it with `npx deepspace app source
+--json`; a configured remote alone is not authority. Use workspaces only for
+DeepSpace source, and treat rollback as bundle-retention-dependent. Load the
+narrow source, version-control, coordination, release, or GitHub reference
+below rather than guessing from remote names.
 
 Secrets belong in the encrypted app store (`npx deepspace secrets set KEY=value`), never hand-edited `.dev.vars`. `DEEPSPACE_APP_ID` is identity; Wrangler `name` is the URL. Collaborators can deploy and manage secrets but cannot undeploy or transfer.
 
@@ -89,6 +94,7 @@ Before editing, load each matching reference and skip unrelated files.
 |---|---|
 | `references/workflow.md` | Starting a complete product, clone, or multi-feature build. |
 | `references/cli.md` | Command discovery, login, output/actions/exits, logs, or test entry points. |
+| `references/source-control.md` | Choosing, inspecting, or transferring GitHub versus DeepSpace source. |
 | `references/version-control.md` | Clone/push/pull, workspaces, or repository refusals. |
 | `references/coordination.md` | Status, activity, cursors, or resuming after context loss. |
 | `references/releases.md` | Deploy lineage, releases, rollback, retention, or deploy Git refusals. |
@@ -96,7 +102,7 @@ Before editing, load each matching reference and skip unrelated files.
 | `references/deploy.md` | Deploy mechanics, `.dev.vars`, secrets at deploy, or `--env`. |
 | `references/secrets.md` | Secret store, configs, migrations, or generated cache. |
 | `references/app-identity.md` | App ids, `app init`, forks, renames, list/undeploy/transfer. |
-| `references/legacy-migration.md` | Pre-app-id apps or legacy ownership conflicts. |
+| `references/legacy-migration.md` | Name-shaped app ids, pre-id configs, or identity-migration recovery. |
 | `references/collaborators.md` | Teammates, invitations, or collaborator 403s. |
 | `references/sdk-reference.md` | Hooks/types beyond the three shown above. |
 | `references/schemas.md` | Collections, permissions, or visibility bugs. |

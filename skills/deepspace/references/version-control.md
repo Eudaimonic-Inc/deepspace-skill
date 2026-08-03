@@ -2,7 +2,13 @@ _Load when cloning, pushing, pulling, or using a DeepSpace workspace. For status
 
 # Version control and workspaces
 
-Every app has a real Git repository on DeepSpace. The platform remote is named `space`; wrappers install or repair it and configure a helper for the platform host (global for a durable CLI executable, repository-local for a transient one). Afterward, ordinary commands such as `git fetch space` also work.
+DeepSpace-source apps have a real platform Git repository. The platform remote
+is named `space`; wrappers install or repair it and configure a helper for the
+platform host (global for a durable CLI executable, repository-local for a
+transient one). Afterward, ordinary commands such as `git fetch space` also
+work. GitHub-source apps intentionally refuse these writes and workspaces; use
+ordinary GitHub branches/worktrees instead. See `source-control.md` before
+changing authority.
 
 ```bash
 npx deepspace clone <app-or-id> [dir]
