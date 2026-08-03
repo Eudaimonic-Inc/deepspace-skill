@@ -121,4 +121,4 @@ Before editing, load each matching reference and skip unrelated files.
 - Pages outside `src/pages/` are not routed; data/auth hooks require the `(app)/` providers.
 - Never trust port 5173 when sibling sessions exist. Use `dev start --port N` and match Playwright config; do not kill another session.
 - Caller identity comes from the verified JWT, never WebSocket query params or forwarded `/api/*` headers.
-- In `.claude/worktrees/*`, run `dev start` once and use the printed `wt-<name>` preview entry.
+- In any linked Git worktree, let `dev start`, `test run`, and `dev kill` share the CLI's per-checkout port. Claude desktop preview additionally uses the printed `wt-<name>` entry.
