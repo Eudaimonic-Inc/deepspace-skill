@@ -9,9 +9,10 @@ releases, routes, collaborators, and billing stay at one private physical
 resource id. Never mint a replacement app or copy those stores manually.
 
 Require a CLI whose `npx deepspace app migrate --help` exists. Work only from
-the authoritative GitHub checkout. Pause deploy, rollback, undeploy, source
-changes, and ownership changes during the short prepare/commit sequence; live
-app traffic continues.
+the authoritative GitHub checkout. Pause deploy, release rollback, and
+undeploy during the short prepare/commit sequence; live app traffic continues.
+The registry rejects ownership and real source-authority changes while the
+migration is in flight, so do not add a second manual lock for them.
 
 ## Run the resumable workflow
 
