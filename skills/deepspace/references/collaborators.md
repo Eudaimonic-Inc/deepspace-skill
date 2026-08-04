@@ -31,8 +31,9 @@ Run from the app checkout (or pass `-a`/`--app <id or name>`). Test accounts (`�
 | `transfer` | No — owner or platform admin only (→ `references/app-identity.md`) |
 | `collaborators add` / `remove` / `cancel` | No — owner or platform admin only |
 
-Platform admins may perform every owner operation. This does not turn an
-ordinary app collaborator into an admin.
+Platform admins may perform the app lifecycle and collaborator-management
+operations above. Source-authority changes remain owner-only; this does not
+turn an ordinary app collaborator into an admin.
 
 ## Mechanics and traps
 

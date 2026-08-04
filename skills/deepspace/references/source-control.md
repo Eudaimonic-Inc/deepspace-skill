@@ -50,6 +50,6 @@ history reachable through branches and tags; they do not move app identity,
 data, secrets, collaborators, or URLs. Git LFS objects, submodule repositories,
 notes, replace refs, and host-specific metadata are not part of this transfer.
 
-Only the owner or a platform admin changes authority. Collaborators deploy
-according to the owner's current source but cannot flip it. Active DeepSpace
-workspaces must be landed or dropped before moving to GitHub.
+Only the owner changes authority. Collaborators and platform admins may inspect
+the source state but cannot flip it. Active DeepSpace workspaces must be landed
+or dropped before moving to GitHub.
