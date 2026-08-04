@@ -15,11 +15,14 @@ On a repo without an id, first deploy resolves the name: a free name gets a new 
 
 Before the first live deploy, clear the UI checklist in `uiux.md`. If subscription/product catalogs exist, deploy also syncs them; read `payments.md` before changing those files. Custom Cloudflare binding and reserved-route behavior lives in `bindings.md`.
 
-Deploy is commit-first and versioned. Read `releases.md` for dirty/stale/workspace refusals and rollback retention.
+DeepSpace-source deploy is commit-first. GitHub-source deploy preserves the
+manual workflow and ships local bytes without Git operations. Read
+`source-control.md` for that boundary and `releases.md` for lineage, stale
+guards, and rollback retention.
 
 ## `.dev.vars` is generated
 
-`dev start` and `test run` rewrite SDK connection/auth keys and refresh the app's remote secret store into `.dev.vars`. `APP_IDENTITY_TOKEN` appears only after the app has first been registered by deploy; this affects local payments, files, and screenshot APIs.
+`dev start` and `test run` rewrite SDK connection/auth keys and refresh the app's remote secret store into `.dev.vars`. `APP_IDENTITY_TOKEN` appears once the app is registered; deploy registers it, and an earlier secrets write may register it before the first deploy. Until then, local payments, files, and screenshot APIs lack app-origin authentication.
 
 The remote store is the source of truth. Deploy never reads `.dev.vars`; it reconciles Worker secret bindings from the store. Use `npx deepspace secrets …` for values and configs.
 

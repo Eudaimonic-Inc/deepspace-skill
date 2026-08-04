@@ -1,12 +1,14 @@
 # DeepSpace Skill
 
-Claude Code skill for building apps with the [DeepSpace SDK](https://github.com/donalddellapietra/deepspace-sdk).
+Portable agent skill for building apps with the [DeepSpace SDK](https://github.com/deepdotspace/deepspace), including Codex and Claude Code.
 
 ## Install
 
+```bash
+npx -y skills@latest add deepdotspace/deepspace-skill -y
 ```
-/plugin install deepspace
-```
+
+Claude Code plugin users can also run `/plugin install deepspace`.
 
 ## What it does
 
@@ -14,5 +16,5 @@ Teaches your agent about the DeepSpace SDK — hooks, schemas, deployment, featu
 
 ## Links
 
-- [DeepSpace SDK](https://github.com/donalddellapietra/deepspace-sdk)
+- [DeepSpace SDK](https://github.com/deepdotspace/deepspace)
 - [npm: deepspace](https://www.npmjs.com/package/deepspace)

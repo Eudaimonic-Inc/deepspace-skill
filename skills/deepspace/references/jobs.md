@@ -81,7 +81,7 @@ app.post('/api/start-export', async (c) => {
   if (!auth) return c.json({ error: 'unauthorized' }, 401)
   const jobId = await enqueueJob(
     c.env.JOB_ROOMS,
-    `app:${c.env.APP_NAME}`,
+    `app:${c.env.DEEPSPACE_APP_ID}`,
     'export-csv',
     { filterId: '...' },
     { maxAttempts: 2, enqueuedBy: auth.userId },

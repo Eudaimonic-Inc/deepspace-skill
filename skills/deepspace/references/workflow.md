@@ -49,7 +49,15 @@ Design the whole system first — architecture, module boundaries, data model (c
 
 Build order: shared foundation first (schemas, RBAC, worker routes, theme tokens) through **one writer** — two hands making different implicit decisions in the foundation silently corrupt everything built on it — then features on top. Building on a single thread is the default; parallelize across sub-agents only when the work splits cleanly, and then: exclusive file ownership per stream (no two agents ever touch the same file — or the same decision), the conventions inlined in every brief (never just "see the plan"), the absolute working directory pinned in every brief, cross-stream changes routed through you (never agent-to-agent edits), and **spike any shared recipe on one target before fanning it out** — a broken shared instruction multiplies across every parallel worker. Reading work — research, experiments, reviews — parallelizes freely; it's parallel *writing* that needs these rules.
 
-**One workspace per line of work** (`npx deepspace workspace new -t "<what this is for>"` → `references/version-control.md`). Each stream gets a durable, resumable branch and isolated checkout. `workspace sync` reports path overlap with live peers, but the warning is advisory; keep exclusive file ownership in the briefs. Commit and sync as you go. `workspace land` preserves those commits in an ordinary merge, so land verified work rather than polishing WIP history.
+**One isolated checkout per line of work.** Inspect `npx deepspace app source
+--json` first. For DeepSpace source, use `npx deepspace workspace new -t
+"<what this is for>"`; for GitHub source, use an ordinary Git branch and
+worktree because DeepSpace workspaces intentionally refuse there. Each stream
+gets a durable, resumable branch and isolated checkout. DeepSpace `workspace
+sync` reports path overlap with live peers, but the warning is advisory; keep
+exclusive file ownership in the briefs. Commit and publish through the selected
+source's normal flow as you go. See `references/version-control.md` and
+`references/github.md`.
 
 ### 6. Verify like a user — green gates are a false green
 
@@ -75,8 +83,13 @@ Report with evidence — the screenshot, the output, the live URL — and keep a
 - **Walk the spec feature-by-feature** against the research/decisions docs and confirm each is built and verified — this completeness walk, not your own sense of progress, decides "done." A self-graded "mostly there" is not a completeness check.
 - **When everything looks 100% done, run a whole-system design review** — a high-level pass over the finished codebase: refactor where it simplifies, remove dead code, split what grew too big, make it leaner and more robust. This is what keeps the codebase maintainable. Then re-run the step-6 gates — a refactor isn't done until verification confirms nothing broke.
 - **Every cut or deferral is communicated with a reason** — never a stubbed "coming soon", a silently skipped hard part, or a substituted reference. If a named resource is missing, ask; never quietly swap.
-- **Land before you deploy** when the work is meant for trunk. Deploy is commit-first and refuses a dirty checkout. An intentional workspace deploy must first sync its exact HEAD and still leaves live code on an unlanded line. Every deploy appends a release; rollback works only while its bundle is retained (→ `references/releases.md`).
-- Deploy (pre-launch, no users: deploy autonomously on green gates + a live smoke; rehearse risky changes with `deploy --env staging`). Clear the first-deploy checklist (SKILL.md §4). Then hand the user the live URL with a short what-to-test-first list — **the user driving the live product is the final gate** (taste doesn't automate); park any taste calls you couldn't settle for that moment.
+- **Land before you deploy** when DeepSpace-source workspace work is meant for
+  trunk. DeepSpace-source deploy is commit-first, and an intentional workspace
+  deploy must first sync its exact HEAD. GitHub-source deploy is the manual
+  path and may ship dirty or unpushed local bytes without Git operations; do
+  not impose DeepSpace lineage rules on it. Every deploy appends a release;
+  rollback works only while its bundle is retained (→ `references/releases.md`).
+- Deploy (pre-launch, no users: deploy autonomously on green gates + a live smoke; rehearse risky changes with `deploy --env staging`). Clear the first-deploy checklist in `references/uiux.md`. Then hand the user the live URL with a short what-to-test-first list — **the user driving the live product is the final gate** (taste doesn't automate); park any taste calls you couldn't settle for that moment.
 
 ## Long builds: state lives on disk, not in context
 
@@ -85,7 +98,12 @@ Context gets compacted; anything not written down gets forgotten or relitigated.
 - **A task list** — the running to-do; while it's non-empty there is always a next action. This is what prevents stopping halfway.
 - **A state/decisions file** — current phase, exact next step, locked decisions. First thing to re-read on resume.
 - **A lessons file** — append every gotcha or wrong assumption the moment you learn it, and carry it into the next task or sub-agent brief so no mistake repeats within the build.
-- **Commits, not memory, are the undo.** Commit before every risky pass (reviews, refactors, redesigns) so there's something to go back to, and `npx deepspace push` (or `workspace sync`) so it survives this machine — an uncommitted or unpushed hour is the one kind of work a compaction can actually destroy. Commit code; keep planning/coordination docs out of the repo (gitignore the docs folder) and out of any published repo.
+- **Commits, not memory, are the undo.** Commit before every risky pass
+  (reviews, refactors, redesigns) so there's something to go back to. Publish
+  through `deepspace push` / `workspace sync` for DeepSpace source or ordinary
+  Git for GitHub source so it survives this machine. Commit code; keep
+  planning/coordination docs out of the repo (gitignore the docs folder) and
+  out of any published repo.
 
 ## Decide vs ask
 
@@ -111,5 +129,5 @@ Recurring failure modes and the rule that prevents each. (Review and deferral re
 | Test data leaking into the live app | Clean up seeded data in `finally`; audit for orphans before handoff |
 | "Improving" a proven design or pipeline while replicating it | Replicate exactly; diverge only where the user granted latitude |
 | Wrong/stale working directory (sibling checkouts exist) | Pin the absolute cwd everywhere; verify the folder is the canonical, synced one |
-| Hours of work living only in an uncommitted worktree | Commit as you go and sync; deploy refuses a dirty tree anyway (`dirty_worktree`) |
-| Two streams silently editing the same files | One workspace per line of work; read the overlap report from `workspace sync` before landing |
+| Hours of work living only in an uncommitted worktree | Commit as you go and publish through the app's selected source; a GitHub deploy may ship dirty bytes, but that is not durable source |
+| Two streams silently editing the same files | One isolated worktree per line; for DeepSpace workspaces, read the advisory overlap report before landing |

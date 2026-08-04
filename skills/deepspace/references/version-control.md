@@ -2,7 +2,14 @@ _Load when cloning, pushing, pulling, or using a DeepSpace workspace. For status
 
 # Version control and workspaces
 
-Every app has a real Git repository on DeepSpace. The platform remote is named `space`; wrappers install or repair it and configure a helper for the platform host (global for a durable CLI executable, repository-local for a transient one). Afterward, ordinary commands such as `git fetch space` also work.
+DeepSpace-source apps have a real platform Git repository. The platform remote
+is named `space`; wrappers install or repair it and configure a helper for the
+platform host (global for a durable CLI executable, worktree-private for a
+transient one). Plain Git fetch/push then works from that configured checkout.
+For a new clone, use `deepspace clone`; arbitrary `git clone` has automatic
+auth only when the durable global helper is available. GitHub-source apps
+intentionally refuse these writes and workspaces; use ordinary GitHub
+branches/worktrees instead. See `source-control.md` before changing authority.
 
 ```bash
 npx deepspace clone <app-or-id> [dir]
@@ -30,11 +37,16 @@ Rules:
 
 - Commit WIP, then run `workspace sync` to make it durable and visible to collaborators.
 - Run `workspace sync` and `workspace land` from the selected workspace checkout. `-w/--workspace` selects identity; it does not make another checkout safe.
-- `land` makes an ordinary merge, preserving the workspace commits, then deletes the server workspace ref. Local worktree cleanup is the default; `--keep-worktree` opts out.
+- `land` makes an ordinary merge, preserving the workspace commits, then deletes the server workspace ref. Local cleanup removes only a checkout carrying DeepSpace's private ownership marker; unmarked Codex, Claude, and user-created worktrees are retained. `--keep-worktree` opts out.
 - Overlap reports compare live peer tips and are advisory. Read them and coordinate; they are not file ownership locks.
-- Workspace worktrees share the primary checkout's dependency cache. Reinstall when their manifests diverge.
+- Managed workspace defaults are anchored under the primary checkout even when invoked from another linked worktree. Each checkout installs its own dependencies; do not symlink `node_modules` across worktrees.
 - Do not plain-push a `ws/*` branch to `space`; publish it with `workspace sync` so metadata and activity stay coherent.
 - Deploying from a workspace requires its exact HEAD to be synced first. Follow the refusal's action rather than deploying an older workspace tip.
+
+`workspace drop` refuses to delete unpublished commits. It verifies that the
+tip is represented by cloud workspace/base/landed history and deletes the ref
+with compare-and-swap, so a concurrently advanced branch survives. Follow its
+`workspace sync` action or use `--keep-worktree`; never force cleanup.
 
 ## Guardrails
 

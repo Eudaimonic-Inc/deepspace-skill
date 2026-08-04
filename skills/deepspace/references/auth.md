@@ -106,7 +106,7 @@ The stack is split across two files:
     e.kind === 'permission' ? warning(e.title, e.detail) : error(e.title, e.detail)
   }
 >
-  <RecordScope roomId={SCOPE_ID} schemas={schemas} appId={APP_NAME}>
+  <RecordScope roomId={SCOPE_ID} schemas={schemas}>
     {children}
   </RecordScope>
 </RecordProvider>

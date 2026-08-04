@@ -1,53 +1,63 @@
-_Load this reference when an app predates the app-id model — `npx deepspace app list` shows a name-based id (not `app_…`), wrangler.toml has no `DEEPSPACE_APP_ID`, or a deploy fails with "name … is taken by another app"._
+_Load this reference when running `deepspace app migrate`, upgrading an app
+across a breaking DeepSpace contract, or handling a pre-app-id/name-shaped app._
 
-# Migrating a legacy (pre-app-id) app
+# App migrations
 
-Apps deployed before the immutable-id era are registered under a **name-based id**:
-`npx deepspace app list --json` shows `"appId": "hopkins"`, not `app_<ULID>`, and often
-`"hasSecretsStore": false`. Both id forms are valid in `DEEPSPACE_APP_ID`. Migration is
-two steps **in this order** — the secrets store keys off the app id, so adopt the id
-*before* writing any secrets:
-
-## 1. Adopt the legacy id — never let one get minted for a deployed name
-
-[references/app-identity.md](app-identity.md) says deploy/init mint an id when none
-exists — but they first try to **adopt** the id of an app you own with a matching name.
-For a legacy app that adoption is what you want. Adopting a legacy name-as-id app you
-**own** stays automatic; if a collaborator or admin adopts one they can deploy but
-don't own, deploy asks them to confirm first (or requires `--adopt` non-interactively). If the lookup misses and a fresh
-`app_…` id gets minted instead, you now hold a brand-new app identity, and the next
-deploy tries to register it under your existing subdomain:
-
-```
-Deploy failed
-└  The name myapp.app.space is taken by another app.
-```
-
-That error against your **own** app name = a minted id shadowing a legacy registration.
-Fix it by hand — `app init` won't overwrite an existing id (that's the `--new-id` fork flag):
+`deepspace app migrate` is the permanent, versioned app-upgrade workflow. Do
+not search for or invent a version-specific migration script.
 
 ```bash
-npx deepspace app list --json    # the legacy entry's appId is its name
+npx deepspace app migrate --dry-run
+npx deepspace app migrate
 ```
 
-```toml
-[vars]
-DEEPSPACE_APP_ID = "myapp"            # legacy name-based id, verbatim
+The installed SDK owns an ordered registry of structural, idempotent steps.
+The command applies one safe boundary at a time and returns at most one exact
+`commit`, `push`, or `deepspace deploy` action. Execute that action verbatim,
+then rerun `npx deepspace app migrate` until it reports no pending migrations.
+Use `--json` for a machine consumer; agents should still surface the human
+meaning of each pause.
 
-[env.staging.vars]
-DEEPSPACE_APP_ID = "myapp-staging"    # each [env.*] is its own app, same rule
-```
+Source-only migrations update the checked-in `deepspace.migrations.json`
+manifest in the same commit as their source changes. Normal deploys carry those
+ids in the retained bundle and release metadata. The next run returns
+`deepspace deploy` while an id is absent from the live release and reports
+`up_to_date` once all ids are live. Do not edit the manifest by hand.
 
-## 2. Then migrate the secrets
+## Safety rules
 
-With the right id in place, follow "Migrating a legacy app" in
-[references/secrets.md](secrets.md) (`secrets upload .dev.vars`, per-env stores, the
-empty-store deploy guardrail). Two legacy-specific notes:
+- Start from the app's authoritative Git checkout and a clean branch.
+- Run `--dry-run` first. It changes no files or registry rows.
+- Let the command edit recognized source/config shapes. If it names a file and
+  line it cannot transform safely, inspect that site; never use a broad search
+  and replace.
+- Keep physical `APP_NAME` uses for existing room ids, Durable Objects, and R2
+  keys unless a migration explicitly owns a data move. Canonical platform
+  authentication uses `DEEPSPACE_APP_ID`.
+- GitHub-source apps remain manual: the command never writes GitHub. Commit and
+  push only through the returned actions. DeepSpace-source apps use their
+  normal packaged deploy/source flow.
+- Do not deploy, release-rollback, undeploy, transfer, or change source
+  authority concurrently while a server-backed migration is prepared.
 
-- Hand-written lines from the removed `AppSecretsRoom` era (e.g.
-  `APP_SECRETS_LOCAL_FALLBACK`) are dead — delete rather than upload them.
-- Secrets written **before** step 1 (under a wrongly-minted `app_…` id) live in that
-  orphan app's store: harmless, but invisible to your real app. Re-upload under the
-  adopted id and `secrets configs delete` anything created in the wrong store. Values
-  never change mid-migration, so production is safe throughout — the store only becomes
-  the live input at the next `deploy`.
+## Legacy identity step
+
+A name-shaped/pre-id GitHub app is one registered migration step. The command:
+
+1. inventories the exact registry rows to re-key and physical stores to retain;
+2. repairs recognized old runtime identity wiring (`x-app-name` → canonical
+   `x-app-id`) without changing `APP_NAME` data namespaces;
+3. reserves a strict `app_<ULID>`, writes it to `wrangler.toml`, and pauses for
+   the returned commit/push action;
+4. commits the registry cutover transaction; and
+5. returns one canonical deploy action that updates the existing physical app.
+
+Before the registry cutover commits, `--cancel` reverses a prepared identity
+migration after restoring and publishing the legacy GitHub configuration.
+After commit, recovery is forward-only: rerun the migration/deploy loop until
+the canonical release manifest is live and the migration verifies.
+
+Verify the app's real data surfaces after deploy—not only `/`: authenticated
+records, files, subscriptions/charges when present, collaborators, routes, and
+release/source lineage. For retained files, probe representative existing keys
+and confirm their physical `apps/<resourceId>/...` paths did not change.
