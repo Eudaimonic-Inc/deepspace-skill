@@ -28,13 +28,15 @@ Run from the app checkout (or pass `-a`/`--app <id or name>`). Test accounts (`�
 | Secrets: `list` / `get` / `download` / `pull` | **Yes** — every config in the app's store |
 | Secrets: `set` / `upload` / `delete`, `configs create` / `delete` | **Yes** — writes are audited under the collaborator's own id |
 | `undeploy` | No — owner or platform admin only |
-| `transfer` | No — owner only (→ `references/app-identity.md`) |
+| `transfer offer` | No — owner only (→ `references/app-identity.md`) |
+| `transfer status` / `cancel` / `accept` | Only when the collaborator is the named recipient; either party may cancel, and only the recipient may accept |
 | `collaborators add` / `remove` / `cancel` | No — owner only |
 
 Platform admins can deploy, manage secrets, and undeploy through their platform
 override, but cannot manage collaborators, offer an ownership transfer, or
-change source authority. This does not turn an ordinary app collaborator into
-an admin.
+change source authority. A collaborator who is the named transfer recipient
+participates as that recipient, not through the collaborator role. This does
+not turn an ordinary app collaborator into an admin.
 
 ## Mechanics and traps
 
