@@ -53,4 +53,4 @@ npx deepspace app transfer cancel
 npx deepspace app transfer accept --app app_01HZ…    # commit — they own it now
 ```
 
-On acceptance the app — data, secrets, routes, custom domains — moves as-is; only the owner (and billing) changes. Tell the recipient the app id; there is no in-product notification. Collaborators cannot transfer or undeploy; platform admins may perform owner operations. → [references/collaborators.md](collaborators.md)
+On acceptance the app — data, secrets, routes, custom domains — moves as-is; only the owner (and billing) changes. Tell the recipient the app id; there is no in-product notification. Only the owner can offer a transfer, and only the named recipient can accept it. Collaborators cannot transfer or undeploy; platform admins may undeploy but cannot initiate an ownership transfer. → [references/collaborators.md](collaborators.md)

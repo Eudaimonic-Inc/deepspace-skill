@@ -22,7 +22,7 @@ guards, and rollback retention.
 
 ## `.dev.vars` is generated
 
-`dev start` and `test run` rewrite SDK connection/auth keys and refresh the app's remote secret store into `.dev.vars`. `APP_IDENTITY_TOKEN` appears only after the app has first been registered by deploy; this affects local payments, files, and screenshot APIs.
+`dev start` and `test run` rewrite SDK connection/auth keys and refresh the app's remote secret store into `.dev.vars`. `APP_IDENTITY_TOKEN` appears once the app is registered; deploy registers it, and an earlier secrets write may register it before the first deploy. Until then, local payments, files, and screenshot APIs lack app-origin authentication.
 
 The remote store is the source of truth. Deploy never reads `.dev.vars`; it reconciles Worker secret bindings from the store. Use `npx deepspace secrets …` for values and configs.
 
