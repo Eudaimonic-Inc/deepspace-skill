@@ -15,7 +15,10 @@ On a repo without an id, first deploy resolves the name: a free name gets a new 
 
 Before the first live deploy, clear the UI checklist in `uiux.md`. If subscription/product catalogs exist, deploy also syncs them; read `payments.md` before changing those files. Custom Cloudflare binding and reserved-route behavior lives in `bindings.md`.
 
-Deploy is commit-first and versioned. Read `releases.md` for dirty/stale/workspace refusals and rollback retention.
+DeepSpace-source deploy is commit-first. GitHub-source deploy preserves the
+manual workflow and ships local bytes without Git operations. Read
+`source-control.md` for that boundary and `releases.md` for lineage, stale
+guards, and rollback retention.
 
 ## `.dev.vars` is generated
 

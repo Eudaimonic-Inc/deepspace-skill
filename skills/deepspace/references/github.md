@@ -5,8 +5,8 @@ _Load only when the user asks for GitHub, another hosted remote, pull requests, 
 An app may use GitHub as its one authoritative repository. In that mode:
 
 - push branches and tags with ordinary Git;
-- DeepSpace deploy verifies the configured repository and exact remote commit,
-  but never pushes it;
+- ordinary DeepSpace deploy ships the local working tree—including dirty or
+  unpushed bytes—without reading or writing Git;
 - DeepSpace Git writes and workspaces refuse with a source-authority error; and
 - releases and activity remain readable platform facts, not a second source
   repository.

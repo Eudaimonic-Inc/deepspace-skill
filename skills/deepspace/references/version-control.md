@@ -43,6 +43,11 @@ Rules:
 - Do not plain-push a `ws/*` branch to `space`; publish it with `workspace sync` so metadata and activity stay coherent.
 - Deploying from a workspace requires its exact HEAD to be synced first. Follow the refusal's action rather than deploying an older workspace tip.
 
+`workspace drop` refuses to delete unpublished commits. It verifies that the
+tip is represented by cloud workspace/base/landed history and deletes the ref
+with compare-and-swap, so a concurrently advanced branch survives. Follow its
+`workspace sync` action or use `--keep-worktree`; never force cleanup.
+
 ## Guardrails
 
 - `pull` fetches and fast-forwards. If dirtiness, divergence, or another worktree prevents the local update, it stops safely and may return one local action.

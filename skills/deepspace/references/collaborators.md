@@ -6,7 +6,7 @@ Collaborators are DeepSpace users the app **owner** authorizes to work on the ap
 
 > **Not the same thing:** record-level collaborators (`collaboratorsField` in a schema, the `'shared'` read rule) control who sees *rows inside* an app → `references/schemas.md`. This file is about who can *ship* the app.
 
-## Managing (owner-only)
+## Managing (owner or platform admin)
 
 ```bash
 npx deepspace app collaborators list                         # COLLABORATORS + PENDING INVITES (with expiry); --json → {collaborators, pending}
@@ -27,12 +27,15 @@ Run from the app checkout (or pass `-a`/`--app <id or name>`). Test accounts (`�
 | `dev` / `test` | **Yes** |
 | Secrets: `list` / `get` / `download` / `pull` | **Yes** — every config in the app's store |
 | Secrets: `set` / `upload` / `delete`, `configs create` / `delete` | **Yes** — writes are audited under the collaborator's own id |
-| `undeploy` | No — owner (or platform admin) only |
-| `transfer` | No — owner-only (→ `references/app-identity.md`) |
-| `collaborators add` / `remove` / `cancel` | No — owner-only |
+| `undeploy` | No — owner or platform admin only |
+| `transfer` | No — owner or platform admin only (→ `references/app-identity.md`) |
+| `collaborators add` / `remove` / `cancel` | No — owner or platform admin only |
+
+Platform admins may perform every owner operation. This does not turn an
+ordinary app collaborator into an admin.
 
 ## Mechanics and traps
 
 - **Access is the app role.** Every deploy/secrets request is authorized against the app id: owner, collaborator, or neither. A 403 `Not the app owner or a collaborator` means ask the owner for `collaborators add` — or your access was revoked.
 - **On-behalf deploys keep the owner's identity.** A collaborator deploy ships code plus the store's secrets, tagged to the owner for billing; nothing about the app's ownership changes.
-- **Getting started as a collaborator:** clone the repo (its `wrangler.toml` already carries `DEEPSPACE_APP_ID`), `npx deepspace auth login`, and `dev` / `test` / `deploy` / `secrets` just work — no linking. If you actually wanted your **own** copy of the app rather than to collaborate, run `npx deepspace app init --new-id` to fork it (fresh data, fresh secrets store).
+- **Getting started as a collaborator:** clone the repo (its `wrangler.toml` already carries `DEEPSPACE_APP_ID`), `npx deepspace auth login`, and `dev start` / `test run` / `deploy` / `secrets` just work — no linking. If you actually wanted your **own** copy of the app rather than to collaborate, run `npx deepspace app init --new-id` to fork it (fresh data, fresh secrets store).

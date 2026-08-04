@@ -19,8 +19,8 @@ export const tasks: CronTask[] = [
 
 export async function runTask(name: string, env: Env): Promise<void> {
   // buildCronContext(env, ownerUserId, roomId?) — roomId defaults to 'default'.
-  // Pass `app:${env.APP_NAME}` for the per-app RecordRoom (matches scaffold convention).
-  const ctx = buildCronContext(env, env.OWNER_USER_ID, `app:${env.APP_NAME}`)
+  // Scope by immutable app identity; names are mutable URL labels.
+  const ctx = buildCronContext(env, env.OWNER_USER_ID, `app:${env.DEEPSPACE_APP_ID}`)
   if (name === 'heartbeat') {
     // Records — runs as app owner (bypasses caller RBAC). Shapes differ from
     // tools.* in server actions — ctx.records unwraps the ActionResult envelope

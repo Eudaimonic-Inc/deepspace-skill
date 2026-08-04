@@ -43,7 +43,7 @@ Schemas are columns only — no `fields` property, no document-mode storage.
 
 ### JSON columns
 
-Use `interpretation: { kind: 'json' }` for columns holding structured data (objects, arrays). The SDK handles serialization at the worker boundary: **pass the value directly on write (no `JSON.stringify`) and it comes back already parsed on read (no `JSON.parse`)** — this applies to `useRecord` / `useRecords` / `useMutations` on the client and to `tools.get` / `tools.query` inside server actions. Calling `JSON.parse` on the read side will throw because you're parsing an already-parsed object.
+Use `interpretation: { kind: 'json' }` for columns holding structured data (objects, arrays). The SDK handles serialization at the worker boundary: **pass the value directly on write (no `JSON.stringify`) and it comes back already parsed on read (no `JSON.parse`)** — this applies to `useQuery` / `useMutations` on the client and to `tools.get` / `tools.query` inside server actions. Calling `JSON.parse` on the read side will throw because you're parsing an already-parsed object.
 
 ```typescript
 { name: 'tags', storage: 'text', interpretation: { kind: 'json' } },
@@ -100,14 +100,14 @@ When creating records scoped to specific users (e.g., conversations, private dat
 - The SDK filters **server-side** in the DO — `canRead()` checks `ownerField`, `collaboratorsField`, and `visibilityField` before sending data over WebSocket.
 - **Never rely on client-side filtering alone** — data still syncs over WebSocket and is visible in dev tools, and a determined attacker reading the WS frames bypasses any client filter you add.
 
-`useConversations().createChannel(name)` defaults the underlying conversation record to `Visibility: 'public'` and `Type: 'public'`, which means all users in the directory see the conversation. Override the visibility by either (a) using `createDM` / `createGroupDM` instead (which set `Visibility: 'private'` and populate `ParticipantIds`), or (b) calling `useMutations<Conversation>('conversations').create({ ..., Visibility: 'private', ParticipantIds: [...] })` directly. The simple `useChannels().create(name)` from `'deepspace'` (against `CHANNELS_SCHEMA`) is a different surface and uses `type` instead of `Visibility`.
+`useConversations().createChannel(name)` defaults the underlying conversation record to `Visibility: 'public'` and `Type: 'public'`, which means all users in the directory see the conversation. Override the visibility by either (a) using `createDM` / `createGroupDM` instead (which set `Visibility: 'private'` and populate `ParticipantIds`), or (b) calling `useMutations<Conversation>('conversations').create({ ..., Visibility: 'private', ParticipantIds: [...] })` directly. The app-scoped `useChannels().create({ name, type })` surface is different and uses lowercase `type`; a bare string is invalid.
 
 ## Schema-lint warnings
 
 The SDK runs a lightweight lint when each schema is registered (worker startup, first DO boot), and `deepspace dev start` / `deepspace deploy` also run it up front and print any findings in the terminal ("Schema lint: N warnings in src/schemas.ts"). Runtime warnings print to the worker console prefixed `[schema-lint]`. Neither blocks, but each finding flags a real privacy or correctness foot-gun. Treat them as errors:
 
 - **`visibilityField` declared, a role has `read: true`, but no role uses `read: 'published'` / `'shared'`** — the visibility column does nothing because the `read: true` roles see every row regardless of `visibility`. Either drop `visibilityField` (you didn't mean to gate reads) or change at least one role to `read: 'published'` (owner OR public) / `'shared'` (owner OR collaborator OR public) so the filter actually runs.
-- **`ownerField` set but the named column is not `userBound: true`** — owner-spoofing risk. `userBound: true` is what tells the DO to overwrite the column with the caller's verified userId on write, instead of trusting whatever the client sent. Add `userBound: true` (and ideally `immutable: true`) to the column definition.
+- **`ownerField` set but the named column is not `userBound: true`, while an ordinary client role can create** — owner-spoofing risk. `userBound: true` makes the DO overwrite the column with the verified caller id. If every ordinary client role has `create: false`, server/app writes may legitimately assign another user and the lint does not warn; do not add `userBound` mechanically in that shape.
 - **`userBound: true` on a non-`text` storage column** — the SDK can only coerce a userId into a text field; on `number` columns the write will fail at runtime (the `storage` union is `'number' | 'text'`). Change `storage` to `'text'`.
 
 These are the most common shapes of "looks secure but isn't" — if a schema-lint warning appears at `dev`/`deploy` startup or in the worker console, fix the schema before continuing.

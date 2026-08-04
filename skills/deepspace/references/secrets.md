@@ -68,7 +68,7 @@ Deletes propagate too: `secrets delete` + redeploy removes the binding from the 
 
 ## Collaborators
 
-A collaborator ([references/collaborators.md](collaborators.md)) has **full** secrets access on the app — read, write, and configs — with writes audited under their own id. Authorization is the app role (owner / collaborator) keyed by `DEEPSPACE_APP_ID`; there is nothing to link or grant per-secret. Collaborators cannot undeploy or transfer the app.
+A collaborator ([references/collaborators.md](collaborators.md)) has **full** secrets access on the app — read, write, and configs — with writes audited under their own id. Authorization is the app role (owner, collaborator, or platform admin) keyed by `DEEPSPACE_APP_ID`; there is nothing to link or grant per-secret. Collaborators cannot undeploy or transfer the app.
 
 ## Cache behavior
 

@@ -1,6 +1,6 @@
 # DeepSpace Skill
 
-Portable agent skill for building apps with the [DeepSpace SDK](https://github.com/donalddellapietra/deepspace-sdk), including Codex and Claude Code.
+Portable agent skill for building apps with the [DeepSpace SDK](https://github.com/deepdotspace/deepspace), including Codex and Claude Code.
 
 ## Install
 
@@ -16,5 +16,5 @@ Teaches your agent about the DeepSpace SDK — hooks, schemas, deployment, featu
 
 ## Links
 
-- [DeepSpace SDK](https://github.com/donalddellapietra/deepspace-sdk)
+- [DeepSpace SDK](https://github.com/deepdotspace/deepspace)
 - [npm: deepspace](https://www.npmjs.com/package/deepspace)

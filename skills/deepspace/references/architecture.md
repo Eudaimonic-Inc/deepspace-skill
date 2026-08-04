@@ -30,10 +30,12 @@ App Worker (per-app)                 Platform Worker (shared)
 
 ## Scope conventions
 
-- `app:<APP_ID>` — the app's primary RecordRoom. Default in the scaffold (`SCOPE_ID = \`app:${APP_ID}\`` in `src/constants.ts`, where `APP_ID` is the immutable `DEEPSPACE_APP_ID`; the worker keys the DO via `app:${env.DEEPSPACE_APP_ID}`). Note: `(app)/_layout.tsx` passes `appId={APP_NAME}` as a separate `RecordScope` prop — that's the display/handle, not the scope ID; don't conflate the two.
+- `app:<APP_ID>` — the app's primary RecordRoom. Default in the scaffold (`SCOPE_ID = \`app:${APP_ID}\`` in `src/constants.ts`, where `APP_ID` is the immutable `DEEPSPACE_APP_ID`; the worker keys the DO via `app:${env.DEEPSPACE_APP_ID}`).
 - `conv:<id>` — DM/conversation DO. Use with `useConversation` and the `conv_messages` / `conv_reactions` / `conv_members` schemas.
 - `workspace:default` — the single shared workspace scope (email handles, teams, etc.) hosted on the platform-worker. There is currently only `default`; the `workspace:` namespace is reserved but not multi-instance.
-- `dir:<appHandle>` — per-DeepSpace-app directory DO (cross-app conversations / communities / posts). The `<appHandle>` is the published app's slug (e.g., `dir:deepspace-mail`), not your local `wrangler.toml` `name` — both apps proxy into the platform-worker's directory DO keyed by handle.
+- `dir:<APP_ID>` — per-app directory DO for cross-app conversations,
+  communities, and posts. Use immutable `DEEPSPACE_APP_ID`; the platform maps
+  it to the permanent physical resource id for identity-migrated apps.
 
 ## Cross-app workspace isolation
 

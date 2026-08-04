@@ -9,7 +9,12 @@ Every app has an **immutable id** (`app_` + 26 chars) minted when the app is cre
 DEEPSPACE_APP_ID = "app_01HZXYABCDEFGHJKMNPQRSTVWX"
 ```
 
-The id **is** the app: data, secrets, collaborators, billing, and custom domains all key to it. The `name` field is just a lease on `<name>.app.space` — it can change without the app losing anything. **Commit `wrangler.toml`**: the id is not a secret, and losing it means the next deploy creates a *different* app.
+The id **is** the app's durable public identity: every operation addresses data,
+secrets, collaborators, billing, and custom domains through it. For an
+identity-migrated app, the backend maps that id to the permanent private
+`resourceId` that still owns the physical stores. The `name` field is only a
+lease on `<name>.app.space`; it can change without the app losing anything.
+**Commit `wrangler.toml`**: the id is not a secret.
 
 ## Where ids come from
 
@@ -48,4 +53,4 @@ npx deepspace app transfer cancel
 npx deepspace app transfer accept --app app_01HZ…    # commit — they own it now
 ```
 
-On acceptance the app — data, secrets, routes, custom domains — moves as-is; only the owner (and billing) changes. Tell the recipient the app id; there is no in-product notification. Collaborators cannot transfer (or undeploy) — that stays with the owner. → [references/collaborators.md](collaborators.md)
+On acceptance the app — data, secrets, routes, custom domains — moves as-is; only the owner (and billing) changes. Tell the recipient the app id; there is no in-product notification. Collaborators cannot transfer or undeploy; platform admins may perform owner operations. → [references/collaborators.md](collaborators.md)
