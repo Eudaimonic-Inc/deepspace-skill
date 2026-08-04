@@ -30,6 +30,11 @@
     "_rationale": "Casual + vague. Strong signal for the skill's collaborative-canvas wheelhouse."
   },
   {
+    "query": "move this app's mintlify docs into docs.json and mdx, keep my custom react playground, then publish them at docs.widget.app.space",
+    "should_trigger": true,
+    "_rationale": "Native docs migration, arbitrary MDX React, and the same-app DeepSpace docs subdomain."
+  },
+  {
     "query": "show me how to wire up Liveblocks for cursor presence in my Figma plugin",
     "should_trigger": false,
     "_rationale": "Near-miss: shares 'cursor presence' but explicitly names a different real-time stack."
@@ -58,5 +63,10 @@
     "query": "set up tailwind v4 in my vite project — i added @theme but classes aren't being picked up",
     "should_trigger": false,
     "_rationale": "Pure CSS/build tooling; the @theme keyword overlaps with the skill's theme guide but the task isn't deepspace."
+  },
+  {
+    "query": "set up a standalone mintlify docs site for my vercel next.js app",
+    "should_trigger": false,
+    "_rationale": "Near-miss: documentation publishing, but explicitly requests Mintlify and Vercel rather than native DeepSpace docs."
   }
 ]

@@ -5,7 +5,9 @@ description: >
   DeepSpace SDK on Cloudflare Workers; when code imports `deepspace`,
   `deepspace/worker`, or uses `RecordRoom`; when running `npx deepspace`; or
   when the task involves app.space deploys, live sync, presence, collaborative
-  editing, RBAC, messaging, payments, Durable Objects, or DeepSpace source.
+  editing, RBAC, messaging, payments, Durable Objects, or DeepSpace source; or
+  when creating or migrating native DeepSpace docs with `docs.json`, MD/MDX,
+  `deepspace docs`, the docs agent, or a same-app docs subdomain.
 ---
 
 # DeepSpace
@@ -100,6 +102,7 @@ opening “Load…” gate is authoritative.
   `architecture.md`, `server-actions.md`, `bindings.md`.
 - **Features:** `ai-chat.md`, `cron.md`, `jobs.md`, `integrations.md`,
   `payments.md`.
+- **Native documentation:** `native-docs.md`.
 - **Product quality:** `uiux.md`, `landing-design.md`, `testing.md`,
   `preview.md`.
 
