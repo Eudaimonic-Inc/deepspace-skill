@@ -6,8 +6,9 @@ description: >
   `deepspace/worker`, or uses `RecordRoom`; when running `npx deepspace`; or
   when the task involves app.space deploys, live sync, presence, collaborative
   editing, RBAC, messaging, payments, Durable Objects, or DeepSpace source; or
-  when creating or migrating native DeepSpace docs with `docs.json`, MD/MDX,
-  `deepspace docs`, the docs agent, or a same-app docs subdomain.
+  when creating or migrating native DeepSpace documentation with
+  `documentation.json`, Markdown/MDX, the documentation feature, or an
+  explicitly attached documentation domain.
 ---
 
 # DeepSpace
@@ -86,8 +87,9 @@ clone, or source-transfer operation.
   not from the SDK.
 - Treat scaffold themes and the starter home as placeholders. Give shipped
   apps their own design.
-- Consumer apps require Node `>=22.15.0`; the SDK repository's development
-  toolchain uses Node 24. Check the relevant `package.json` instead of guessing.
+- Consumer apps support maintained Node lines: `>=22.15.0 <23`, `>=24 <25`, or
+  `>=26 <27`. The SDK repository's development toolchain uses Node 24. Check
+  the relevant `package.json` instead of guessing.
 
 ## Reference router
 
@@ -97,7 +99,7 @@ opening “Load…” gate is authoritative.
 - **Workflow and coordination:** `workflow.md`, `coordination.md`.
 - **CLI, source, and lifecycle:** `cli.md`, `source-control.md`,
   `version-control.md`, `releases.md`, `github.md`, `deploy.md`, `secrets.md`,
-  `app-identity.md`, `legacy-migration.md`, `collaborators.md`, `domain.md`.
+  `app-identity.md`, `collaborators.md`, `domain.md`.
 - **Data and runtime:** `sdk-reference.md`, `schemas.md`, `auth.md`,
   `architecture.md`, `server-actions.md`, `bindings.md`.
 - **Features:** `ai-chat.md`, `cron.md`, `jobs.md`, `integrations.md`,
