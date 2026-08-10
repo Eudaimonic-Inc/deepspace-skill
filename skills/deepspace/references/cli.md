@@ -18,9 +18,10 @@ Unknown command paths search the full tree by lexical distance, including
 subcommands, so `deepspace migrate` suggests `deepspace app migrate` rather
 than silently falling back to root help.
 
-Consumer projects support Node `>=22.15.0`. The SDK repository itself pins
-Node 24 for development and releases; that repository engine does not raise the
-published package's consumer floor.
+Consumer projects support maintained Node lines: `>=22.15.0 <23`, `>=24 <25`,
+or `>=26 <27`. The SDK repository itself pins Node 24 for development and
+releases; that repository engine does not raise the published package's
+consumer floor.
 
 ## Authentication
 

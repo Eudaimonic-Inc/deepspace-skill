@@ -1,10 +1,14 @@
-_Load this reference before managing app secrets, migrating a legacy `.dev.vars` app, understanding cache behavior, or debugging a secrets 403._
+_Load this reference before managing app secrets, understanding generated `.dev.vars` behavior, or debugging a secrets refusal._
 
 # Secrets
 
 Every app has exactly **one** platform-owned, encrypted secrets store, keyed by the immutable `DEEPSPACE_APP_ID` in `wrangler.toml` (→ [references/app-identity.md](app-identity.md)). There is **no setup or link step**: run the commands from the app directory (or pass `--app <appId>`) and they work — for the owner and collaborators alike, even before the first deploy.
 
-The store is the source of truth for **every** environment. `.dev.vars` is a generated plaintext cache (written `0600`) that `dev` and `test` regenerate at startup; `deploy` never reads it — the store is the only deploy input. Never add or edit app secrets in that file: on a store-backed app the SDK rewrites the whole file on the next run.
+The store is the source of truth for **every** environment. `.dev.vars` is a
+generated plaintext materialization (written `0600`) that `dev`, `test`,
+`deploy`, and `secrets pull` rewrite whole. Deploy never reads it — the store
+is the only deploy input. Never add or edit app secrets in that file: hand
+edits disappear on the next write.
 
 Worker code reads secrets as `env.API_KEY` — identical in dev and after deploy (deploy binds each store secret as a Cloudflare `secret_text`).
 
@@ -53,16 +57,17 @@ Seeding a staging env's store from production crosses two apps, so `--copy-from`
 npx deepspace secrets download | npx deepspace secrets upload - -e staging
 ```
 
-## Migrating a legacy app
+## Missing and empty configs
 
-Apps that predate the store kept hand-written secrets in `.dev.vars`. Nothing migrates them automatically, and deploy no longer reads them at all — upload once, explicitly:
+An absent config means the app has not initialized that deploy input. Deploy
+regenerates `.dev.vars` without app values, then refuses with
+`secrets_config_missing` and an executable `secrets configs create <name>`
+action. Create the config or set its first value, then retry.
 
-```bash
-npx deepspace secrets upload .dev.vars
-npx deepspace deploy
-```
-
-Deploy guardrails around this: with an **empty** store and secret-looking keys in `.dev.vars`, deploy **blocks** ("Refusing to deploy: the app store has no secrets, but .dev.vars has <keys>…") so you can't silently ship an app whose production secrets get dropped — upload first, or pass `--allow-missing-secrets` to ship without them. With a non-empty store, stray local keys just draw a warning that they are **NOT** deployed.
+An explicitly created empty config is intentional. Deploying it removes all
+user-secret bindings from the live Worker. This distinction protects existing
+production bindings while still making delete-all possible without a second
+override flag.
 
 Deletes propagate too: `secrets delete` + redeploy removes the binding from the live Worker (deploy reconciles the script's `secret_text` bindings against the store).
 
@@ -72,9 +77,13 @@ A collaborator ([references/collaborators.md](collaborators.md)) has **full** se
 
 ## Cache behavior
 
-- `dev` / `test` re-pull the store at startup and regenerate `.dev.vars` (SDK-managed keys + the secrets cache). If the refresh **fails**, they abort rather than run against a stale cache; an empty or not-yet-created store is fine (no cache section, no error).
+- `dev` / `test` re-pull the selected config at startup and regenerate
+  `.dev.vars` (SDK-managed keys + app values). If the refresh **fails**, they
+  abort rather than run against stale values. A missing config generates a
+  value-free file locally; deploy additionally refuses until it is created.
 - `set` / `upload` / `delete` change the **remote store only** — a running dev session keeps its old values until restarted; `secrets pull` refreshes the file without running dev.
-- The generated section starts at the `# --- DeepSpace secrets cache: … do not edit manually ---` divider and runs to end of file. Once the app is store-backed, treat the whole file as SDK-owned — hand-written lines don't survive a rewrite.
+- The whole file is SDK-owned; there is no editable zone, divider grammar,
+  import path, backup, or legacy compatibility mode.
 - Store-backed apps use one shared `.dev.vars` across wrangler envs (no `.dev.vars.<env>` files).
 
 ## Troubleshooting

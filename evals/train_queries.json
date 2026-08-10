@@ -30,9 +30,9 @@
     "_rationale": "Casual + vague. Strong signal for the skill's collaborative-canvas wheelhouse."
   },
   {
-    "query": "move this app's mintlify docs into docs.json and mdx, keep my custom react playground, then publish them at docs.widget.app.space",
+    "query": "move this app's Mintlify docs into documentation.json and MDX, keep my custom React playground, then publish them at /docs on the same app",
     "should_trigger": true,
-    "_rationale": "Native docs migration, arbitrary MDX React, and the same-app DeepSpace docs subdomain."
+    "_rationale": "Native documentation migration, arbitrary MDX React, and the same-app documentation feature."
   },
   {
     "query": "show me how to wire up Liveblocks for cursor presence in my Figma plugin",
