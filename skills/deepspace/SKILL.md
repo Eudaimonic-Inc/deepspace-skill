@@ -99,7 +99,7 @@ opening “Load…” gate is authoritative.
 - **Workflow and coordination:** `workflow.md`, `coordination.md`.
 - **CLI, source, and lifecycle:** `cli.md`, `source-control.md`,
   `version-control.md`, `releases.md`, `github.md`, `deploy.md`, `secrets.md`,
-  `app-identity.md`, `legacy-migration.md`, `collaborators.md`, `domain.md`.
+  `app-identity.md`, `collaborators.md`, `domain.md`.
 - **Data and runtime:** `sdk-reference.md`, `schemas.md`, `auth.md`,
   `architecture.md`, `server-actions.md`, `bindings.md`.
 - **Features:** `ai-chat.md`, `cron.md`, `jobs.md`, `integrations.md`,

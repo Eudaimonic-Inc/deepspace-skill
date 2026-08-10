@@ -15,8 +15,8 @@ npx deepspace <group> <command> --help
 Important nested entry points are `dev start|kill`, `test run|screenshot|accounts`, `auth login|logout|whoami`, `app …`, and `integrations list|info|invoke`. Use only paths present in help; do not infer flat aliases from a subcommand name.
 
 Unknown command paths search the full tree by lexical distance, including
-subcommands, so `deepspace migrate` suggests `deepspace app migrate` rather
-than silently falling back to root help.
+subcommands, and return a concrete suggestion rather than silently falling
+back to root help.
 
 Consumer projects support maintained Node lines: `>=22.15.0 <23`, `>=24 <25`,
 or `>=26 <27`. The SDK repository itself pins Node 24 for development and
