@@ -45,11 +45,24 @@ npx deepspace secrets configs delete qa
 
 Every command takes `-a/--app <appId>` (default: `DEEPSPACE_APP_ID` from the nearest `wrangler.toml`), `-c/--config <name>` (default `prd`), and `-e/--env <name>` (targets the `[env.<name>]` block — which is its **own app** with its own store; config defaults to `<name>`). Mixing them up is caught: `-e staging` without an `[env.staging]` app id errors and points you at `-c staging`.
 
-Names: `[A-Za-z_][A-Za-z0-9_]*`, conventionally `UPPER_SNAKE`. SDK-reserved binding names (the 11 `RESERVED_BINDING_NAMES` — `APP_OWNER_JWT`, `ASSETS`, … — plus `API_WORKER_URL` and `PLATFORM_WORKER_URL`) are rejected — the platform injects those. Caps: 32 KB per value, 128 secrets / 128 KB per config, 64 configs; oversized writes → 413. `ALLOW_DEBUG_ROUTES=true` is settable but prints a loud warning. In production it enables the debug surface only for an authenticated app owner or platform admin; local dev enables it automatically.
+Names: `[A-Za-z_][A-Za-z0-9_]*`, conventionally `UPPER_SNAKE`. SDK-reserved binding names (the `RESERVED_BINDING_NAMES` set — `APP_OWNER_JWT`, `ASSETS`, `DEEPSPACE_RESOURCE_ID`, … — plus `API_WORKER_URL` and `PLATFORM_WORKER_URL`) are rejected — the platform injects those; the refusal message names the offender. Caps: 32 KB per value, 128 secrets / 128 KB per config, 64 configs; oversized writes → 413. `ALLOW_DEBUG_ROUTES=true` is settable but prints a loud warning. In production it enables the debug surface only for the app owner or a user carrying the app's own `admin` role; local dev enables it automatically.
 
 ## Configs and environments
 
 The store holds flat KEY=value **configs**. `prd` is the convention for the top-level wrangler environment — deploy of the top-level block ships config `prd`. A named `[env.<name>]` block is a separate app (own id, own store) whose deploys ship config `<name>` of *that* store. Within one app, `-c <name>` reads/writes another config with no linking, and `configs create <new> --copy-from <existing>` copies server-side (it refuses to copy over an existing config).
+
+`-c/--config` also works on `dev start` and `test run`, which is how a non-`prd`
+config becomes runnable: keep live keys in `prd`, test keys in a `dev` config,
+and run locally against the test keys with no second app —
+
+```bash
+npx deepspace secrets configs create dev --copy-from prd
+npx deepspace secrets set STRIPE_SECRET_KEY=sk_test_... -c dev
+npx deepspace dev start -c dev
+```
+
+Deploy has no `-c`: a deploy's config is determined by its target (`prd` for
+the top-level app, `<name>` for an `[env.<name>]` app).
 
 Seeding a staging env's store from production crosses two apps, so `--copy-from` can't do it — pipe instead, without a temp file:
 
@@ -92,6 +105,7 @@ A collaborator ([references/collaborators.md](collaborators.md)) has **full** se
 ## Troubleshooting
 
 - **Changed a secret but production still sees the old value** → redeploy. Deployed workers hold `secret_text` bindings; they don't fetch at runtime.
+- **`rollback` restores code, not secrets** — the rolled-back worker keeps the secret bindings already live on the script from the *last deploy*; it neither restores the values that release shipped with nor re-reads the store. A `secrets set` made after the last deploy does not reach a rolled-back worker until you deploy again.
 - **Changed a secret but local dev still sees the old value** → restart `dev` (or `secrets pull`); the cache regenerates only at startup.
 - **`Not the app owner or a collaborator` (403)** → ask the owner for `collaborators add <your-email>` — or your access was revoked.
 - **`This app id is registered to another user`** → you're holding someone else's id (cloned repo). `npx deepspace app init --new-id` forks it into your own app (fresh store).

@@ -1,6 +1,7 @@
-_Load for deploy lineage, release history, rollback, or `dirty_worktree` /
-`behind_trunk` / `stale_base` / `no_bundle` refusals. Build and secret mechanics
-remain in `deploy.md`._
+_Load for deploy lineage, release history, rollback (including its
+code-not-secrets boundary), or `dirty_worktree` / `behind_trunk` /
+`stale_base` / `no_bundle` refusals. Build and secret mechanics remain in
+`deploy.md` and `secrets.md`._
 
 # Releases and rollback
 
@@ -24,7 +25,15 @@ npx deepspace rollback rel_… --allow-do-deletion
 Rollback re-ships a retained bundle without rebuilding or changing Git. Every
 rollback appends another release fact. `releases` marks `rollbackAvailable` in
 JSON; storage pressure can evict an old bundle while retaining its ledger row.
-`no_bundle` means choose another retained release.
+`no_bundle` means choose another retained release. Rollback restores **code,
+not secrets**: the rolled-back worker keeps the secret bindings already live
+on the script from the **last deploy** — neither the values live when that
+release originally shipped nor a fresh read of the store. A `secrets set` made
+after the last deploy does not reach a rolled-back worker until the next
+`deploy`, so a rollback across a secret rotation needs the live bindings
+checked against the older code. Each release row also carries `environment` in `--json`
+(`'production'` for all deploys today; the field exists ahead of environment
+targets).
 
 If rollback would remove Durable Object classes, the CLI refuses.
 `--allow-do-deletion` can permanently delete those classes' stored data:

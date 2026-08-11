@@ -52,15 +52,20 @@ Each `[env.<name>]` is a separate app: distinct canonical `name`, `DEEPSPACE_APP
 
 Wrangler named environments do not inherit `vars`, Durable Object bindings/migrations, assets, or KV/R2/D1 declarations. Repeat the required blocks under `[env.<name>]`; otherwise the deployed Worker may boot without them.
 
-The browser bundle must also receive the selected environment's app id. If `src/constants.ts` hardcodes production, inject the active id at build time:
+The browser bundle must carry the selected environment's app id, and the CLI
+handles this itself: `deploy`, `dev start`, and `test run` (its browser
+suites) inject `VITE_APP_ID` with the id of the app actually selected (with
+`--env`, the env's own id). New scaffolds consume it automatically; an app whose
+`src/constants.ts` still hardcodes the literal only needs that one line
+changed to:
 
 ```ts
-// src/constants.ts
-export const APP_ID = import.meta.env.VITE_APP_ID as string
-export const SCOPE_ID = `app:${APP_ID}`
-
-// vite.config.ts: parse wrangler.toml using process.env.CLOUDFLARE_ENV,
-// then define import.meta.env.VITE_APP_ID from that env's DEEPSPACE_APP_ID.
+export const APP_ID = (import.meta.env?.VITE_APP_ID as string | undefined) ?? '<scaffolded literal>'
 ```
 
-Without this, the browser can connect to production rooms while staging server actions write to staging rooms. Gate temporary staging-only routes on an explicit staging signal, and remove the environment with `npx deepspace app undeploy --env staging` when finished.
+Do not parse `wrangler.toml` in `vite.config.ts` or read
+`process.env.CLOUDFLARE_ENV` — the CLI deletes that variable when `--env` is
+active, so recipes built on it silently ship the production app id (browser
+on production rooms, staging server actions on staging rooms). Gate temporary
+staging-only routes on an explicit staging signal, and remove the environment
+with `npx deepspace app undeploy --env staging` when finished.

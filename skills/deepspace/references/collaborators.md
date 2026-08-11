@@ -1,4 +1,4 @@
-_Load this reference when adding teammates to an app, deploying an app you don't own, or debugging a 403 on deploy/secrets as a non-owner._
+_Load this reference when adding teammates to an app, accepting a collaborator invite, deploying an app you don't own, or debugging a 403 on deploy/secrets as a non-owner._
 
 # App collaborators
 
@@ -17,7 +17,20 @@ npx deepspace app collaborators remove teammate@example.com
 
 Run from the app checkout (or pass `-a`/`--app <id or name>`). Test accounts (`…@deepspace.test`) can never be collaborators — grants to them fail closed. Collaborators get owner-equivalent deploy and secrets access, so only add people you trust.
 
-**`add` has two paths.** If the email already belongs to a DeepSpace user, they're added as a collaborator immediately. If it doesn't, the server creates a **pending invite**, emails the person, and bills the invite to the owner. The recipient must open the emailed `/join/<token>` page, sign in with the invited address, and explicitly accept; signing in elsewhere does not grant access. The invite has an expiry date; re-running `add` while an invite is still live returns `already_invited` (no new email, no re-charge) — `cancel <email>` then re-`add` to reset. `list` shows live invites under a `PENDING INVITES ON <app>` section.
+**`add` has two paths.** If the email already belongs to a DeepSpace user, they're added as a collaborator immediately. If it doesn't, the server creates a **pending invite**, emails the person, and bills the invite to the owner. The invite has an expiry date; re-running `add` while an invite is still live returns `already_invited` (no new email, no re-charge) — `cancel <email>` then re-`add` to reset. `list` shows live invites under a `PENDING INVITES ON <app>` section.
+
+## Accepting an invite (invitee side)
+
+Two equivalent paths; authority is the signed-in account's verified email matching the invited address — signing in elsewhere does not grant access:
+
+```bash
+npx deepspace app collaborators invites            # pending invites for my account
+npx deepspace app collaborators accept <app-id>    # accept; follow-up action: deepspace clone <app-id>
+```
+
+or open the emailed `/join/<token>` page and accept there. The CLI path is the
+one an agent uses — no browser, no token handling (tokens never travel through
+`invites`/`accept`).
 
 ## What a collaborator can and can't do
 

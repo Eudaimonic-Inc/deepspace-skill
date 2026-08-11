@@ -9,9 +9,23 @@ npx deepspace test run                    # smoke + api
 npx deepspace test run smoke|api|e2e|unit|all
 npx deepspace test run tests/foo.spec.ts
 npx deepspace test run --port 5180        # match dev start --port 5180
+npx deepspace test run -c dev             # pull the 'dev' secrets config for this run
+npx deepspace test run --base-url https://myapp-staging.app.space
+                                          # run the browser suites against a deployed URL
 ```
 
 `test run` prepares local credentials and Playwright; the scaffold's Playwright config starts Vite when needed. Use plain `npx playwright test <spec>` only for fast iteration after setup. `test screenshot <url> <output>` is an optional visual-debug helper, never test coverage or a required sweep.
+
+`--base-url` targets a deployed app instead of a local server: no local vite is
+spawned and every test runs against that URL (mutually exclusive with `--port`;
+not applicable to `unit`). Apps scaffolded before this flag hardcode
+`localhost` in `tests/playwright.config.ts` — the CLI **refuses**
+(`base_url_not_supported`) rather than silently testing localhost while
+claiming the deployed URL; the fix is in the message: set
+`baseURL: process.env.DEEPSPACE_BASE_URL ?? <local URL>` (in
+`tests/helpers/global-setup.ts` too) and omit `webServer` when it is set.
+`-c/--config` selects which secrets config the run pulls (default: the `--env`
+name, or `prd`) — e.g. test API keys while production keeps live keys.
 
 ## Coverage by change
 

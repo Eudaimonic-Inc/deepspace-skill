@@ -76,12 +76,18 @@ output and logs. `logs --json` is NDJSON in both snapshot and follow modes;
 ## Local development and tests
 
 ```bash
-npx deepspace dev start [--port N]
+npx deepspace dev start [--port N] [-e <env>] [-c <config>]
 npx deepspace dev kill [--port N]
-npx deepspace test run [smoke|api|e2e|unit|all|<file>] [--port N]
+npx deepspace test run [smoke|api|e2e|unit|all|<file>] [--port N] [-e <env>] [-c <config>] [--base-url <url>]
 npx deepspace test accounts list
 npx deepspace test screenshot <url> <output>
 ```
+
+`-c/--config` selects the secrets config the session pulls (default: the
+wrangler env you ran with via `-e/--env`, else `prd`) — local runs against
+e.g. test API keys. `--base-url`
+points the browser suites at a deployed URL instead of starting a local server
+(details in `testing.md`).
 
 `dev start`, `test run`, and screenshot capture inherit child output, so under `--json` their final envelope follows the stream. Screenshot is a small visual-inspection helper, not a substitute for assertions. Testing patterns and account-pool rules live in `testing.md`.
 
