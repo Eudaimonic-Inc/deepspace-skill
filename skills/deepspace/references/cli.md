@@ -21,7 +21,10 @@ back to root help.
 Consumer projects support maintained Node lines: `>=22.15.0 <23`, `>=24 <25`,
 or `>=26 <27`. The SDK repository itself pins Node 24 for development and
 releases; that repository engine does not raise the published package's
-consumer floor.
+consumer floor. In that repository, `packageManager` selects pnpm 11.18 for CI
+and Corepack while `engines.pnpm` accepts compatible pnpm versions from 11.16
+through 11.x. Use a bundled pnpm that satisfies the engine; do not reinstall it
+solely to match the preferred minor.
 
 ## Authentication
 

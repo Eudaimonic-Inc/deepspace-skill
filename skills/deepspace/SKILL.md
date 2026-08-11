@@ -90,8 +90,10 @@ clone, or source-transfer operation.
 - Treat scaffold themes and the starter home as placeholders. Give shipped
   apps their own design.
 - Consumer apps support maintained Node lines: `>=22.15.0 <23`, `>=24 <25`, or
-  `>=26 <27`. The SDK repository's development toolchain uses Node 24. Check
-  the relevant `package.json` instead of guessing.
+  `>=26 <27`. The SDK repository uses Node 24 and pnpm 11. Its
+  `packageManager` selects CI/Corepack's exact minor while `engines.pnpm`
+  defines local compatibility. Do not replace a compatible bundled pnpm merely
+  to match the preferred minor.
 
 ## Reference router
 
