@@ -26,6 +26,17 @@ and Corepack while `engines.pnpm` accepts compatible pnpm versions from 11.16
 through 11.x. Use a bundled pnpm that satisfies the engine; do not reinstall it
 solely to match the preferred minor.
 
+For an existing app, run the target CLI before installing the target SDK:
+
+```bash
+npx deepspace@latest app update
+```
+
+The updater pins DeepSpace and, when the app already declares `ai` directly,
+the compatible AI SDK version used by DeepSpace's tool types. It does not add
+AI to apps that do not use it. Run the returned install action instead of
+editing either version independently.
+
 ## Authentication
 
 Let a network/account/app operation report `not_authenticated`; local inspection and help do not all require login. Then run:
