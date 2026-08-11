@@ -76,6 +76,8 @@ clone, or source-transfer operation.
 
 - Treat records as envelopes: fields are under `record.data`; `put(id, patch)`
   merges a partial value server-side.
+- Disable write controls until `useMutations().ready`. Use a confirmed mutation
+  when navigation, access changes, or a success message depends on acceptance.
 - Data and auth hooks require the `(app)/` provider boundary. Top-level pages
   are static and must not call them.
 - Keep the scaffold's required `users` schema. Extend it; do not rename it.

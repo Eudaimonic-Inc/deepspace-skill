@@ -100,7 +100,12 @@ Both paths write the same row to the same DO and broadcast to the same subscribe
 
 `useJobs(roomId)` is the single client surface for both enqueueing and observing. The returned `jobs` array stays sorted with live/recent first and re-renders on every state change — no manual refetch. Each `JobView` includes `status`, `progress` (0..1, present while live), `progressMessage`, `result` (when succeeded), `error` (when failed), and `attempts`/`maxAttempts` for retry display. The hook auto-reconnects on WebSocket drop and rejects in-flight `enqueue` promises (10s timeout, or immediately on socket close).
 
-**Auth-gate any UI that calls `enqueue` for paid jobs** — the JobRoom DO doesn't enforce a role on enqueue (matches the cron precedent). If your jobs spend owner credits via integrations or AI proxies, gate the button by `useUser().user?.role === 'admin'` or move the page under `(app)/(protected)/`.
+Direct `enqueue`, `cancel`, and `retry` calls require a verified user with a
+member/admin write role; JobRoom rechecks that role on every mutation. For a
+deliberately public producer, expose one app-owned HTTP action that validates a
+named job type and bounded payload, rate-limits it, then calls `enqueueJob`
+server-side. Paid jobs should still use an owner-only UI/action so an ordinary
+member cannot spend the owner's credits.
 
 ## Testing without waiting for a real upstream
 

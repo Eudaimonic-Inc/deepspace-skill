@@ -41,6 +41,12 @@ The remote store is the source of truth. Deploy never reads `.dev.vars`; it reco
 - An absent config is not the same as an explicitly empty config: deploy
   refuses the former and gives an executable `secrets configs create` action.
 
+Cloudflare preview builds may copy `.dev.vars` beside the generated server
+worker. DeepSpace keeps that copy mode `0600`; deploy uploads the worker file
+and separate client assets, not that file or the worker directory wholesale.
+Exclude `dist/*/.dev.vars` from generic archive/upload globs, or archive only
+the documented worker file and client asset directory.
+
 ## Named environments
 
 Each `[env.<name>]` is a separate app: distinct canonical `name`, `DEEPSPACE_APP_ID`, Durable Objects, and secret config. Initialize explicitly with `npx deepspace app init --env <name>` or let its first deploy mint the id.

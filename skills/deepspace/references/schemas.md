@@ -6,12 +6,12 @@ Load this reference when defining a new collection, choosing a permission rule, 
 
 Add one file per collection under `src/schemas/` and register it in `src/schemas.ts`. Every collection needs `name`, `columns`, and `permissions`. The scaffold already ships `usersSchema` (in `users-schema.ts`) and `settingsSchema` (in `admin-schema.ts`).
 
-- **`usersSchema` is required.** It uses `USERS_COLUMNS` from `deepspace/worker` and the SDK's `useUser` / `useUsers` / `useUserLookup` hooks plus the auth user-row writes all expect a `'users'` collection with this exact shape. Add columns to it if you need (e.g., a `bio` field), but never rename it, replace it, or drop the `USERS_COLUMNS` baseline.
+- **`usersSchema` is required.** It uses `USERS_COLUMNS` from `deepspace/schema` and the SDK's `useUser` / `useUsers` / `useUserLookup` hooks plus the auth user-row writes all expect a `'users'` collection with this exact shape. Add columns to it if you need (e.g., a `bio` field), but never rename it, replace it, or drop the `USERS_COLUMNS` baseline.
 - **`settingsSchema` is just a scaffold starter** for admin-only key/value config. No SDK feature depends on it — customize the columns freely, or remove it entirely if your app doesn't need an admin settings store.
 
 ```typescript
 // src/schemas/items-schema.ts
-import type { CollectionSchema } from 'deepspace/worker'
+import type { CollectionSchema } from 'deepspace/schema'
 
 export const itemsSchema: CollectionSchema = {
   name: 'items',
@@ -30,14 +30,14 @@ export const itemsSchema: CollectionSchema = {
 
 ```typescript
 // src/schemas.ts
-import type { CollectionSchema } from 'deepspace/worker'
+import type { CollectionSchema } from 'deepspace/schema'
 import { usersSchema } from './schemas/users-schema'
 import { itemsSchema } from './schemas/items-schema'
 
 export const schemas: CollectionSchema[] = [usersSchema, itemsSchema]
 ```
 
-For messaging, add `CHANNELS_SCHEMA`, `MESSAGES_SCHEMA`, `REACTIONS_SCHEMA` (and optionally `CHANNEL_MEMBERS_SCHEMA`, `CHANNEL_INVITATIONS_SCHEMA`, `READ_RECEIPTS_SCHEMA`) from `deepspace/worker` to the array.
+For messaging, add `CHANNELS_SCHEMA`, `MESSAGES_SCHEMA`, `REACTIONS_SCHEMA` (and optionally `CHANNEL_MEMBERS_SCHEMA`, `CHANNEL_INVITATIONS_SCHEMA`, `READ_RECEIPTS_SCHEMA`) from `deepspace/schema` to the array. Use this runtime-neutral entry for every schema imported by browser/shared code; reserve `deepspace/worker` for worker-only helpers.
 
 Schemas are columns only — no `fields` property, no document-mode storage.
 
