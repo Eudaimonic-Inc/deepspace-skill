@@ -78,9 +78,13 @@ Without both edits, `sharedScopes: [{ roomId: 'workspace:default', ... }]` on `<
 
 ## Security model — WebSocket and `/api/*` identity
 
-The Durable Object reads caller identity (`userId`, `userName`, `userEmail`, `userImageUrl`, `role`) off the URL or headers it receives and trusts them implicitly. The worker is the only place that can scrub spoofed values. Two worker surfaces, two scopes of scrubbing:
+Room Durable Objects read caller identity only from encoded internal request
+headers written by their Worker proxy; they never authenticate a public request
+themselves. The worker strips every client-supplied identity query parameter
+and header before applying verified claims. Two worker surfaces own that
+boundary:
 
-**Starter `wsRoute` (per-app, WebSocket only)** — strips `userId` / `userName` / `userEmail` / `userImageUrl` / `role` (and the `token`) from the URL on every WebSocket upgrade, then re-applies identity only from the verified JWT (`sub` → `userId`, `name` → `userName`, `email` → `userEmail`, `image` → `userImageUrl`). The starter has no `/api/*` passthrough — `/api/auth/*` and `/api/integrations/*` are direct calls to the auth-worker / api-worker, which verify the JWT themselves.
+**Starter `wsRoute` (per-app, WebSocket only)** — strips `userId` / `userName` / `userEmail` / `userImageUrl` / `role` (and the `token`) from the URL, removes the corresponding internal headers, then re-applies verified JWT claims as encoded headers (`sub` → `userId`, `name` → `userName`, `email` → `userEmail`, `image` → `userImageUrl`). The starter has no `/api/*` passthrough — `/api/auth/*` and `/api/integrations/*` are direct calls to the auth-worker / api-worker, which verify the JWT themselves.
 
 **Platform worker (cross-app, WebSocket AND `/api/*`)** — same WebSocket query-param scrub as above, plus on `/api/*` HTTP passthrough: overwrites `X-User-Id` with the JWT subject and strips `X-App-Action` (only the worker itself sets that header for internal server-action calls). Auth is required on every cross-app upgrade (no anonymous flow on `workspace:*` / `dir:*` / `conv:*`).
 
@@ -90,6 +94,11 @@ Three valid states on app-worker WebSockets:
 - **Valid token** → identity derived from the JWT claims.
 
 The client SDK no longer sends identity params over WS URLs — the worker would strip them anyway. **Do not roll your own WebSocket URL with `userId=…`**, and do not set `X-User-Id` or `X-App-Action` from client code. The api-worker also ignores `X-Billing-User-Id` from end-user JWTs — billing always falls on the JWT subject. (See `references/integrations.md`.)
+
+Anonymous app-room and presence connections are session-local guests, not
+accounts: the room assigns an `anon-<uuid>` id and non-identifying label, omits
+email/image/chosen role, and accepts only that connection's bounded ephemeral
+presence state. Do not persist or promote this guest identity into an account.
 
 ## App-name rules
 

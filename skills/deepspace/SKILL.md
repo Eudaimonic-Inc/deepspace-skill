@@ -76,6 +76,8 @@ clone, or source-transfer operation.
 
 - Treat records as envelopes: fields are under `record.data`; `put(id, patch)`
   merges a partial value server-side.
+- Disable write controls until `useMutations().ready`. Use a confirmed mutation
+  when navigation, access changes, or a success message depends on acceptance.
 - Data and auth hooks require the `(app)/` provider boundary. Top-level pages
   are static and must not call them.
 - Keep the scaffold's required `users` schema. Extend it; do not rename it.
@@ -88,8 +90,10 @@ clone, or source-transfer operation.
 - Treat scaffold themes and the starter home as placeholders. Give shipped
   apps their own design.
 - Consumer apps support maintained Node lines: `>=22.15.0 <23`, `>=24 <25`, or
-  `>=26 <27`. The SDK repository's development toolchain uses Node 24. Check
-  the relevant `package.json` instead of guessing.
+  `>=26 <27`. The SDK repository uses Node 24 and pnpm 11. Its
+  `packageManager` selects CI/Corepack's exact minor while `engines.pnpm`
+  defines local compatibility. Do not replace a compatible bundled pnpm merely
+  to match the preferred minor.
 
 ## Reference router
 

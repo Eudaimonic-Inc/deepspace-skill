@@ -45,7 +45,7 @@ npx deepspace secrets configs delete qa
 
 Every command takes `-a/--app <appId>` (default: `DEEPSPACE_APP_ID` from the nearest `wrangler.toml`), `-c/--config <name>` (default `prd`), and `-e/--env <name>` (targets the `[env.<name>]` block — which is its **own app** with its own store; config defaults to `<name>`). Mixing them up is caught: `-e staging` without an `[env.staging]` app id errors and points you at `-c staging`.
 
-Names: `[A-Za-z_][A-Za-z0-9_]*`, conventionally `UPPER_SNAKE`. SDK-reserved binding names (the 11 `RESERVED_BINDING_NAMES` — `APP_OWNER_JWT`, `ASSETS`, … — plus `API_WORKER_URL` and `PLATFORM_WORKER_URL`) are rejected — the platform injects those. Caps: 32 KB per value, 128 secrets / 128 KB per config, 64 configs; oversized writes → 413. `ALLOW_DEBUG_ROUTES=true` is settable but prints a loud warning — it exposes an **unauthenticated** debug API on the deployed app.
+Names: `[A-Za-z_][A-Za-z0-9_]*`, conventionally `UPPER_SNAKE`. SDK-reserved binding names (the 11 `RESERVED_BINDING_NAMES` — `APP_OWNER_JWT`, `ASSETS`, … — plus `API_WORKER_URL` and `PLATFORM_WORKER_URL`) are rejected — the platform injects those. Caps: 32 KB per value, 128 secrets / 128 KB per config, 64 configs; oversized writes → 413. `ALLOW_DEBUG_ROUTES=true` is settable but prints a loud warning. In production it enables the debug surface only for an authenticated app owner or platform admin; local dev enables it automatically.
 
 ## Configs and environments
 
@@ -85,6 +85,10 @@ A collaborator ([references/collaborators.md](collaborators.md)) has **full** se
 - The whole file is SDK-owned; there is no editable zone, divider grammar,
   import path, backup, or legacy compatibility mode.
 - Store-backed apps use one shared `.dev.vars` across wrangler envs (no `.dev.vars.<env>` files).
+- A Cloudflare preview build may materialize a mode-`0600` copy beside its
+  generated worker. DeepSpace does not upload that file or the directory
+  wholesale. Exclude `dist/*/.dev.vars` from generic archive/upload globs, or
+  archive only the documented worker file and client asset directory.
 
 ## Troubleshooting
 

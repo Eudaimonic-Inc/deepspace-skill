@@ -5,7 +5,8 @@ Use this as an export index, not a workflow guide. Load the task-shaped referenc
 | Import | Owns |
 |---|---|
 | `deepspace` | React hooks, providers, client helpers, shared types. |
-| `deepspace/worker` | Durable Objects, schemas, JWT, actions, AI, bindings, metering. |
+| `deepspace/schema` | Runtime-neutral collection types and built-in schema constants for browser/shared code. |
+| `deepspace/worker` | Durable Objects, JWT, actions, AI, bindings, metering, and worker-only helpers. |
 | `deepspace/server` | Platform-backed subscriptions, refunds, and screenshots. |
 | `deepspace/testing` | Playwright multi-user fixtures; test files only. |
 
@@ -35,7 +36,7 @@ Read `auth.md` before changing provider order or public/gated layout.
 | `RecordScope` | Selects room/schemas/app/shared scope. |
 | `ScopeRegistryProvider` | Required once when using shared scopes. |
 | `useQuery<T>(collection, options?)` | `{ records, status, error }`; records are envelopes, so use `record.recordId` and `record.data.field`. |
-| `useMutations<T>(collection)` | `create`, `put`, `remove` plus `*Confirmed`. `put` merges a patch. Plain methods return after optimistic apply; use confirmed methods when the next operation depends on server acceptance. |
+| `useMutations<T>(collection)` | `{ ready, create, put, remove, createConfirmed, putConfirmed, removeConfirmed }`. Disable write controls until `ready`; all methods fail with `RecordRoomNotReadyError` / code `not_ready` before then. `put` merges a patch. Plain methods return after optimistic apply; use confirmed methods when the next operation depends on server acceptance. |
 | `useUsers()` | User list, admin `setRole`, and `refresh`. |
 | `useUserLookup()` | O(1) `getUser/getEmail/getName`; other fields come from `getUser(id)`. |
 | `useRecordContext()`, `RecordStore` | Low-level store access. |
@@ -60,7 +61,7 @@ Types: `Channel`, `Message`, `Reaction`, `ChannelMember`, `ChannelInvitation`, `
 
 | Export | Contract |
 |---|---|
-| `useYjsField`, `useYjsText`, `useYjsRoom` | Collaborative data/text. Gate editing on `synced && canWrite`; Yjs awareness carries cursors and selections. |
+| `useYjsField`, `useYjsText`, `useYjsRoom` | Collaborative data/text. `connected` is transport state; `synced` is document convergence. Gate editing on `connected && synced && canWrite`; Yjs awareness carries cursors and selections. |
 | `useCanvas(roomId)` | Shapes, viewports, undo/redo. Writes no-op until `canWrite`; viewport broadcast remains available to viewers. |
 | `usePresence()` | Users-collection heartbeat/last-seen state, not cursors. |
 | `usePresenceRoom(scopeId)` | Ephemeral cursor/typing/viewport peers. |

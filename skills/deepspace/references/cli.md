@@ -21,7 +21,10 @@ back to root help.
 Consumer projects support maintained Node lines: `>=22.15.0 <23`, `>=24 <25`,
 or `>=26 <27`. The SDK repository itself pins Node 24 for development and
 releases; that repository engine does not raise the published package's
-consumer floor.
+consumer floor. In that repository, `packageManager` selects pnpm 11.18 for CI
+and Corepack while `engines.pnpm` accepts compatible pnpm versions from 11.16
+through 11.x. Use a bundled pnpm that satisfies the engine; do not reinstall it
+solely to match the preferred minor.
 
 ## Authentication
 
@@ -52,7 +55,9 @@ When exactly one deterministic follow-up exists, JSON includes:
 
 Human output renders the same action as `Next:`. Run `argv` directly in `cwd`; do not join it into a shell string. Terminal results, status reports, consent, destructive overrides, and input-dependent choices omit the field. An exit-2 result may therefore require inspecting its facts rather than executing a supplied command; do not infer an action from absence.
 
-One-shot `--json` writes one document, except commands that inherit child output. `logs --follow --json` and `activity --follow --json` are NDJSON streams; parse one frame per line.
+One-shot `--json` writes one document, except commands that inherit child
+output and logs. `logs --json` is NDJSON in both snapshot and follow modes;
+`activity --follow --json` is also NDJSON. Parse one frame per line.
 
 ## Local development and tests
 
@@ -66,4 +71,6 @@ npx deepspace test screenshot <url> <output>
 
 `dev start`, `test run`, and screenshot capture inherit child output, so under `--json` their final envelope follows the stream. Screenshot is a small visual-inspection helper, not a substitute for assertions. Testing patterns and account-pool rules live in `testing.md`.
 
-Use `npx deepspace logs [--follow]` for deployed worker logs. Follow mode is a stream and may emit a metadata frame when output is truncated.
+Use `npx deepspace logs [--follow]` for deployed worker logs. Snapshot and
+follow JSON are streams and may emit a metadata frame when output is
+truncated.
