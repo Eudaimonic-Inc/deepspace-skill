@@ -85,10 +85,9 @@ A collaborator ([references/collaborators.md](collaborators.md)) has **full** se
 - The whole file is SDK-owned; there is no editable zone, divider grammar,
   import path, backup, or legacy compatibility mode.
 - Store-backed apps use one shared `.dev.vars` across wrangler envs (no `.dev.vars.<env>` files).
-- A Cloudflare preview build may materialize a mode-`0600` copy beside its
-  generated worker. DeepSpace does not upload that file or the directory
-  wholesale. Exclude `dist/*/.dev.vars` from generic archive/upload globs, or
-  archive only the documented worker file and client asset directory.
+- A Cloudflare build may transiently materialize `.dev.vars` beside its
+  generated worker. The scaffold deletes that output copy before completion;
+  the root mode-`0600` `.dev.vars` is the only local materialization.
 
 ## Troubleshooting
 
