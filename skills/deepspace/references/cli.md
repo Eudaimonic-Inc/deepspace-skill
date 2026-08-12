@@ -35,7 +35,10 @@ npx deepspace@latest app update
 The updater pins DeepSpace and, when the app already declares `ai` directly,
 the compatible AI SDK version used by DeepSpace's tool types. It does not add
 AI to apps that do not use it. Run the returned install action instead of
-editing either version independently.
+editing either version independently. Read every `manualInstructions` entry in
+JSON (or warning in human output): app-owned Vite and users-schema files are
+never rewritten automatically, so an existing app may receive an exact
+`docs/migrations/` retrofit to apply and verify.
 
 ## Authentication
 

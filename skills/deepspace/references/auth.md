@@ -39,8 +39,14 @@ if (!auth) return new Response('Unauthorized', { status: 401 })
 
 That single edit gates every route using the helper. Do not treat `<AuthGate>`
 as server authorization. When an app intentionally keeps public RecordRooms,
-anonymous sockets receive no `useUsers()` directory, signed-in collaborators
-receive public identity only, and admins receive full user records.
+anonymous sockets receive no `useUsers()` directory. Authenticated results
+first follow the app's `users` row policy and then project public identity for
+non-admins; admins receive full fields for rows their policy permits. The fresh
+scaffold uses `member.read: 'own'`, so a regular member sees only their own row
+unless the app explicitly broadens the policy. Ordinary `useQuery('users')`
+does not apply the directory projection and returns every field allowed by the
+schema; never set `read: true` unless every current and future users column is
+intentionally member-visible.
 
 Static top-level pages (like the shipped `index.tsx` landing) sit outside `(app)/` and stay reachable signed-out regardless — if truly *nothing* should render without a session, point `/` at a gated page instead of shipping the static landing.
 
