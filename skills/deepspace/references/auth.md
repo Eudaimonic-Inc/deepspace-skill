@@ -18,13 +18,29 @@ Every dynamic page requires sign-in. Wrap the data layer in `src/pages/(app)/_la
 // src/pages/(app)/_layout.tsx
 <DeepSpaceAuthProvider>
   <AuthGate>
-    <AuthBoot>{/* AuthBoot's RecordProvider: drop allowAnonymous — nothing public */}
+    <AuthBoot>{/* AuthBoot's RecordProvider: drop allowAnonymous — the client never connects signed out */}
       <Navigation />
       <Outlet />
     </AuthBoot>
   </AuthGate>
 </DeepSpaceAuthProvider>
 ```
+
+This gates the UI and SDK client, not the Worker's WebSocket endpoint. The
+generated `src/server/realtime-routes.ts` deliberately accepts tokenless
+connections for apps with anonymous viewers. For a fully private app, replace
+the optional-token block in its `wsRoute()` helper with:
+
+```ts
+if (!token) return new Response('Unauthorized', { status: 401 })
+const auth = (await verifyJwt(jwtConfig(c.env), token)).result
+if (!auth) return new Response('Unauthorized', { status: 401 })
+```
+
+That single edit gates every route using the helper. Do not treat `<AuthGate>`
+as server authorization. When an app intentionally keeps public RecordRooms,
+anonymous sockets receive no `useUsers()` directory, signed-in collaborators
+receive public identity only, and admins receive full user records.
 
 Static top-level pages (like the shipped `index.tsx` landing) sit outside `(app)/` and stay reachable signed-out regardless — if truly *nothing* should render without a session, point `/` at a gated page instead of shipping the static landing.
 
@@ -62,7 +78,7 @@ Adding a new gated page is a one-file change: drop it inside `(app)/(protected)/
 ## Rules either way
 
 - **Use auth-layer state for auth checks; use profile readiness for profile-backed UI.** `useAuth().isSignedIn` is the canonical signed-in check, and `useAuthStatus()` is safe in app shells before `<RecordProvider>`. `useUser()` loads async; for user menus, role nav, account names, admin controls, or authenticated dashboards under `<RecordProvider>`, prefer `useAuthProfileReady({ requireUser: true })` and render a skeleton while `isSignedIn && userLoading`.
-- `<AuthGate>` controls the **UI layer** — children don't mount until signed in. `RecordProvider allowAnonymous` controls the **data layer** — server accepts unsigned client connections. Inside an `<AuthGate>` subtree the user is always signed in, so `allowAnonymous` is moot there.
+- `<AuthGate>` controls the **UI layer** — children don't mount until signed in. `RecordProvider allowAnonymous` controls whether the **SDK client** connects signed out. The Worker's `wsRoute()` is the server boundary; require a valid token there for a fully private app. Inside an `<AuthGate>` subtree the SDK client is signed in, so `allowAnonymous` is moot there.
 - Don't add a second sign-out — the scaffold nav's account menu (starter: `Navigation.tsx` avatar dropdown; copilot: `AppSidebar.tsx` account row) already calls `signOut()`.
 - **If the app requires sign-in, a sign-out control is non-negotiable.** If you replace the nav component, ensure it still calls `signOut()` from `deepspace` somewhere reachable when signed in.
 - Don't rewrite the nav component just to theme it — edit the `@theme` tokens or pick a `data-theme` preset (see `references/uiux.md` §2).

@@ -37,8 +37,8 @@ Read `auth.md` before changing provider order or public/gated layout.
 | `ScopeRegistryProvider` | Required once when using shared scopes. |
 | `useQuery<T>(collection, options?)` | `{ records, status, error }`; records are envelopes, so use `record.recordId` and `record.data.field`. |
 | `useMutations<T>(collection)` | `{ ready, create, put, remove, createConfirmed, putConfirmed, removeConfirmed }`. Disable write controls until `ready`; all methods fail with `RecordRoomNotReadyError` / code `not_ready` before then. `put` merges a patch. Plain methods return after optimistic apply; use confirmed methods when the next operation depends on server acceptance. |
-| `useUsers()` | User list, admin `setRole`, and `refresh`. |
-| `useUserLookup()` | O(1) `getUser/getEmail/getName`; other fields come from `getUser(id)`. |
+| `useUsers()` | Room directory, admin `setRole`, and `refresh`. Anonymous sockets receive no directory; signed-in collaborators receive public identity (`id`, `name`, optional image, role); admins also receive email and activity fields. |
+| `useUserLookup()` | O(1) `getUser/getEmail/getName`; `getEmail` is available only when the caller is an admin. |
 | `useRecordContext()`, `RecordStore` | Low-level store access. |
 
 ### Messaging and directory

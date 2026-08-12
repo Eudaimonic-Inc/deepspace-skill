@@ -2,6 +2,12 @@ _Load when the desktop preview serves stale code or when developing inside any l
 
 # Desktop preview
 
+Generated apps have one supported local runtime: `npx deepspace dev start`.
+They intentionally do not expose a second `vite preview` script. Cloudflare's
+build can emit a preview-only `dist/<worker>/.dev.vars` copy; the scaffold
+removes it after the build, while the root `.dev.vars` remains the single local
+cache managed by DeepSpace.
+
 DeepSpace detects linked checkouts from Git metadata, not agent-specific directory names. Without an explicit `--port` or `$DEEPSPACE_PORT`, every Codex, Claude, or ordinary linked worktree gets a deterministic port in 5180–6179 from its canonical checkout path. `dev start`, `test run`, and `dev kill` resolve the same port; the primary checkout keeps the normal 5173 default.
 
 Claude desktop preview additionally reads `.claude/launch.json`. A normal app entry runs the current command tree:
