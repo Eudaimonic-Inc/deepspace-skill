@@ -37,7 +37,7 @@ Read `auth.md` before changing provider order or public/gated layout.
 | `ScopeRegistryProvider` | Required once when using shared scopes. |
 | `useQuery<T>(collection, options?)` | `{ records, status, error }`; records are envelopes, so use `record.recordId` and `record.data.field`. |
 | `useMutations<T>(collection)` | `{ ready, create, put, remove, createConfirmed, putConfirmed, removeConfirmed }`. Disable write controls until `ready`; all methods fail with `RecordRoomNotReadyError` / code `not_ready` before then. `put` merges a patch. Plain methods return after optimistic apply; use confirmed methods when the next operation depends on server acceptance. |
-| `useUsers()` | Room directory, admin `setRole`, and `refresh`. Anonymous sockets receive no directory; signed-in collaborators receive public identity (`id`, `name`, optional image, role); admins also receive email and activity fields. |
+| `useUsers()` | Room directory, admin `setRole`, and `refresh`. Anonymous sockets receive no directory. Authenticated rows first follow the app's `users` read policy; non-admin results contain public identity only, while admins receive full fields. The fresh scaffold's `member.read: 'own'` makes a regular member's directory self-only. |
 | `useUserLookup()` | O(1) `getUser/getEmail/getName`; `getEmail` is available only when the caller is an admin. |
 | `useRecordContext()`, `RecordStore` | Low-level store access. |
 
@@ -64,7 +64,7 @@ Types: `Channel`, `Message`, `Reaction`, `ChannelMember`, `ChannelInvitation`, `
 | `useYjsField`, `useYjsText`, `useYjsRoom` | Collaborative data/text. `connected` is transport state; `synced` is document convergence. Gate editing on `connected && synced && canWrite`; Yjs awareness carries cursors and selections. |
 | `useCanvas(roomId)` | Shapes, viewports, undo/redo. Writes no-op until `canWrite`; viewport broadcast remains available to viewers. |
 | `usePresence()` | Users-collection heartbeat/last-seen state, not cursors. |
-| `usePresenceRoom(scopeId)` | Ephemeral cursor/typing/viewport peers. |
+| `usePresenceRoom(scopeId)` | Ephemeral cursor/typing/viewport peers; `connected` drops immediately when the browser goes offline and reconnects when it returns online. |
 | `useGameRoom(roomId)` | Game DO client; game binding/manifest/route are not scaffolded. |
 | `useCronMonitor(roomId)` | Task state plus trigger/pause/resume. See `cron.md` for authorization. |
 | `useJobs(roomId)` | Durable queue state plus enqueue/cancel/retry. Worker-side code uses `enqueueJob`. |
