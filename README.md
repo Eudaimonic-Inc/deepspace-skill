@@ -12,9 +12,20 @@ Claude Code plugin users can also run `/plugin install deepspace`.
 
 ## What it does
 
-Teaches your agent about the DeepSpace SDK — hooks, schemas, deployment, features, RBAC, local dev. The agent automatically uses this knowledge when working in a DeepSpace project.
+Bootstraps your agent for DeepSpace work: the operating sequence (authenticate,
+scaffold, inspect catalogs, extend, test, deploy), the rules that prevent
+expensive mistakes, and — most importantly — how to consult the documentation
+at [docs.deep.space](https://docs.deep.space), which is the opinionated
+authority for both facts and approach. The docs are agent-readable by design:
+an MCP server (`https://docs.deep.space/mcp`), an
+[`llms.txt`](https://docs.deep.space/llms.txt) index, and every page as raw
+Markdown (append `.md`).
+
+The skill deliberately carries no topic references of its own — guidance lives
+in the documentation so there is exactly one place for it to be right.
 
 ## Links
 
+- [Documentation](https://docs.deep.space)
 - [DeepSpace SDK](https://github.com/deepdotspace/deepspace)
 - [npm: deepspace](https://www.npmjs.com/package/deepspace)

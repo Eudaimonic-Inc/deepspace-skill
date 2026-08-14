@@ -17,6 +17,60 @@ DeepSpace is one package for real-time collaborative apps on Cloudflare
 Workers. It provides auth, RBAC, synchronized records, messaging, integrations,
 payments, and deploys to `<name>.app.space`.
 
+This skill is the bootstrap: how to start, how to operate, and how to consult
+the documentation. The documentation at <https://docs.deep.space> is the
+authority for everything else — it is written to be opinionated, so when it
+recommends an approach, take that as the default rather than one option among
+many. Do not rely on memorized DeepSpace APIs: verify against the docs or the
+installed package's `.d.ts` files, both of which track the released SDK.
+
+## Consulting the documentation
+
+Use whichever surface fits the moment:
+
+- **MCP (preferred):** `https://docs.deep.space/mcp` exposes
+  `documentation_search` and `documentation_read`. Register it when your
+  harness supports MCP servers, e.g.
+  `claude mcp add --transport http deepspace-docs https://docs.deep.space/mcp`.
+- **Raw Markdown:** append `.md` to any page URL
+  (`https://docs.deep.space/guides/authentication.md`); fetch
+  <https://docs.deep.space/llms.txt> for the full index with one-line
+  summaries.
+- **In the app:** exact type signatures live in
+  `node_modules/deepspace/dist/{index,worker,server,testing}.d.ts` — these are
+  authoritative when any doc lags the installed version.
+
+Consult the docs BEFORE building in an area, not after something breaks: read
+the matching guide when adding a feature (auth model, payments, jobs, cron,
+AI chat, custom bindings…), the concepts pages when touching `worker.ts`,
+schemas, or sync behavior, and the CLI reference before scripting commands.
+
+## Documentation router
+
+| When working on | Read |
+| --- | --- |
+| First app, project layout | `/get-started/quickstart`, `/get-started/project-structure` |
+| Worker, Durable Objects, scopes, WebSockets | `/concepts/architecture`, `/concepts/realtime-sync` |
+| Collections, permissions, visibility | `/concepts/data-model`, `/concepts/permissions`, `/guides/data-storage` |
+| Sign-in models, gated pages | `/guides/authentication` |
+| Messaging, presence, collaborative editing, canvas | `/guides/messaging`, `/guides/presence-and-cursors`, `/guides/collaborative-editing`, `/guides/canvas` |
+| AI chat, one-shot LLM calls | `/guides/ai-chat` |
+| Money flows | `/guides/payments` |
+| Privileged writes bypassing RBAC | `/guides/server-actions` |
+| Scheduled + background work | `/guides/scheduled-jobs`, `/guides/background-jobs` |
+| External APIs (`integration.post`) | `/guides/external-apis`, plus the live catalog: `npx deepspace integrations list` / `integrations info <integration>/<endpoint>` |
+| File uploads | `/guides/file-uploads` |
+| Custom Cloudflare resources, metering | `/guides/custom-bindings` |
+| Deploys, environments, custom domains | `/concepts/deployment`, `/guides/custom-domains` |
+| Teammates on one app | `/guides/collaborators` |
+| Tests | `/guides/testing` |
+| Native documentation sites | `/guides/documentation` |
+| Exact exports and signatures | `/sdk-reference/overview` and its per-module pages |
+| Any CLI command | `/cli-reference/commands` |
+
+Paths are relative to `https://docs.deep.space`; append `.md` for raw
+Markdown.
+
 ## Operating sequence
 
 1. **Authenticate before running app commands.**
@@ -68,9 +122,9 @@ payments, and deploys to `<name>.app.space`.
 Every app has exactly one Git authority. DeepSpace source is the packaged,
 commit-first workflow; GitHub source preserves the traditional manual workflow,
 including deploying local dirty or unpushed bytes without Git operations.
-Transfer with `deepspace app source`, never by maintaining two sources of truth.
-Read `references/source-control.md` before any source, workspace, push, pull,
-clone, or source-transfer operation.
+Transfer with `deepspace app source`, never by maintaining two sources of
+truth. Before any source, workspace, push, pull, clone, or source-transfer
+operation, read the docs on source control and releases.
 
 ## Rules that prevent expensive mistakes
 
@@ -90,28 +144,4 @@ clone, or source-transfer operation.
 - Treat scaffold themes and the starter home as placeholders. Give shipped
   apps their own design.
 - Consumer apps support maintained Node lines: `>=22.15.0 <23`, `>=24 <25`, or
-  `>=26 <27`. The SDK repository uses Node 24 and pnpm 11. Its
-  `packageManager` selects CI/Corepack's exact minor while `engines.pnpm`
-  defines local compatibility. Do not replace a compatible bundled pnpm merely
-  to match the preferred minor.
-
-## Reference router
-
-Before editing a surface, read every matching reference below. Each reference's
-opening “Load…” gate is authoritative.
-
-- **Workflow and coordination:** `workflow.md`, `coordination.md`.
-- **CLI, source, and lifecycle:** `cli.md`, `source-control.md`,
-  `version-control.md`, `releases.md`, `github.md`, `deploy.md`, `secrets.md`,
-  `app-identity.md`, `collaborators.md`, `domain.md`.
-- **Data and runtime:** `sdk-reference.md`, `schemas.md`, `auth.md`,
-  `architecture.md`, `server-actions.md`, `bindings.md`.
-- **Features:** `ai-chat.md`, `cron.md`, `jobs.md`, `integrations.md`,
-  `payments.md`.
-- **Native documentation:** `native-docs.md`.
-- **Product quality:** `uiux.md`, `landing-design.md`, `testing.md`,
-  `preview.md`.
-
-Paths above are relative to this skill's `references/` directory. Integration
-schemas are in skill-relative `assets/integrations/`. Installed package `.d.ts`
-files are authoritative when a reference intentionally omits a low-use export.
+  `>=26 <27`.
