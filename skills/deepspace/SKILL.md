@@ -59,10 +59,21 @@ schemas, or sync behavior, and the CLI reference before scripting commands.
 | Privileged writes bypassing RBAC | `/guides/server-actions` |
 | Scheduled + background work | `/guides/scheduled-jobs`, `/guides/background-jobs` |
 | External APIs (`integration.post`) | `/guides/external-apis`, plus the live catalog: `npx deepspace integrations list` / `integrations info <integration>/<endpoint>` |
+| Google OAuth endpoints (`google/*`) | `/guides/google-oauth` |
+| Real-time audio/video rooms | `/guides/livekit` |
 | File uploads | `/guides/file-uploads` |
 | Custom Cloudflare resources, metering | `/guides/custom-bindings` |
-| Deploys, environments, custom domains | `/concepts/deployment`, `/guides/custom-domains` |
+| Deploys, environments | `/concepts/deployment` |
+| Secrets | `/guides/secrets` |
+| Releases, rollback, deploy refusals | `/guides/releases-and-rollback` |
+| App ids, renames, undeploy, transfers | `/guides/app-identity` |
+| Source authority, GitHub vs DeepSpace source | `/guides/source-control` |
+| Workspaces, push/pull, activity | `/guides/workspaces` |
+| Custom domains | `/guides/custom-domains` |
 | Teammates on one app | `/guides/collaborators` |
+| Local dev server, worktrees, desktop preview | `/guides/dev-workflow` |
+| Building a whole app end to end | `/guides/building-an-app` |
+| Landing pages, visual design, product polish | `/design/overview` and the design section |
 | Tests | `/guides/testing` |
 | Native documentation sites | `/guides/documentation` |
 | Exact exports and signatures | `/sdk-reference/overview` and its per-module pages |
@@ -143,5 +154,5 @@ operation, read the docs on source control and releases.
   not from the SDK.
 - Treat scaffold themes and the starter home as placeholders. Give shipped
   apps their own design.
-- Consumer apps support maintained Node lines: `>=22.15.0 <23`, `>=24 <25`, or
-  `>=26 <27`.
+- Run apps on a supported Node line — the installation guide
+  (`/get-started/installation`) is the authority on which lines those are.
