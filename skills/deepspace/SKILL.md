@@ -41,13 +41,24 @@ reading procedure:
    every page with a one-line summary.
 2. **Pick 1–2 pages from it and fetch each as Markdown** by appending `.md`
    to the page URL (`https://docs.deep.space/guides/authentication.md`).
-3. **For point lookups, prefer MCP:** `https://docs.deep.space/mcp` exposes
-   `documentation_search` and `documentation_read`. Register it when your
-   harness supports MCP servers, e.g.
+   Fetch with curl (the edge 403s a `Python-urllib` User-Agent). If the page
+   you picked lacks the answer, do not wander adjacent pages — go to step 3.
+3. **To prove whether a topic exists at all**, fetch
+   <https://docs.deep.space/llms-full.txt> once (the whole corpus in one
+   file; each page ends with `Source: /route.md`) and grep it. A confirmed
+   absence means the docs lag the build — fall back to the installed
+   `.d.ts` or the CLI's own `--help`.
+4. **For point lookups within known topics, prefer MCP:**
+   `https://docs.deep.space/mcp` exposes `documentation_search` and
+   `documentation_read`. Register it when your harness supports MCP servers,
+   e.g.
    `claude mcp add --transport http deepspace-docs https://docs.deep.space/mcp`.
-4. **For exact type signatures, read the installed package** —
-   `ls node_modules/deepspace/dist/*.d.ts` — authoritative when any doc lags
-   the installed version.
+   Search finds the exact section when the topic exists; it cannot tell you
+   a topic is absent — that is what step 3 is for.
+5. **For exact type signatures, read the installed package** —
+   `ls node_modules/deepspace/dist/*.d.ts` (in the SDK monorepo itself:
+   `packages/deepspace/dist/`) — authoritative when any doc lags the
+   installed version.
 
 The docs' shape, so you pick pages fast: `/get-started/*` is setup and
 project layout; `/concepts/*` is the runtime model — read it before touching
