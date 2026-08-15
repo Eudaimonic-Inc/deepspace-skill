@@ -23,6 +23,14 @@ authority for everything else — it is written to be opinionated, so when it
 recommends an approach, take that as the default rather than one option among
 many.
 
+## One source authority
+
+Every app has exactly one Git authority — DeepSpace source (packaged,
+commit-first) or GitHub source (manual; deploys ship the local working tree,
+dirty bytes included). Never maintain two sources of truth: transfer with
+`deepspace app source`, and read the source-control and workspaces docs
+before any source, push, pull, or clone operation.
+
 ## Consulting the documentation
 
 Consult the docs BEFORE building in an area, not after something breaks: read
@@ -105,10 +113,6 @@ codes and machine-executable `action` contract.
   shell environment prefixes, logs, commits, or screenshots.
 - Caller identity comes only from a verified JWT. Never send identity in a
   WebSocket URL or client-controlled internal headers.
-- Every app has exactly one Git authority; transfer it with
-  `deepspace app source`, never by maintaining two sources of truth — read
-  the source-control and workspace docs before any source, push, pull, or
-  clone operation.
 - Treat scaffold themes and the starter home as placeholders. Give shipped
   apps their own design.
 - Run apps on a supported Node line — the installation guide
