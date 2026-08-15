@@ -49,10 +49,45 @@ scripting commands. Use whichever surface fits the moment:
   `ls node_modules/deepspace/dist/*.d.ts` — authoritative when any doc lags
   the installed version.
 
-Two pointers the index alone won't surface: the integration catalog is a CLI
-call, not a page (`npx deepspace integrations list` / `integrations info
-<integration>/<endpoint>`), and `/cli-reference/overview` owns the CLI's exit
-codes and machine-executable `action` contract.
+## Documentation router
+
+| When working on | Read |
+| --- | --- |
+| First app, project layout | `/get-started/quickstart`, `/get-started/project-structure` |
+| Worker, Durable Objects, scopes, WebSockets | `/concepts/architecture`, `/concepts/realtime-sync` |
+| Collections, permissions, visibility | `/concepts/data-model`, `/concepts/permissions`, `/guides/data-storage` |
+| Sign-in models, gated pages | `/guides/authentication` |
+| Messaging, presence, collaborative editing, canvas | `/guides/messaging`, `/guides/presence-and-cursors`, `/guides/collaborative-editing`, `/guides/canvas` |
+| AI chat, one-shot LLM calls | `/guides/ai-chat` |
+| Money flows | `/guides/payments` |
+| Privileged writes bypassing RBAC | `/guides/server-actions` |
+| Scheduled + background work | `/guides/scheduled-jobs`, `/guides/background-jobs` |
+| External APIs (`integration.post`) | `/guides/external-apis`, plus the live catalog: `npx deepspace integrations list` / `integrations info <integration>/<endpoint>` |
+| Google OAuth endpoints (`google/*`) | `/guides/google-oauth` |
+| Real-time audio/video rooms | `/guides/livekit` |
+| File uploads | `/guides/file-uploads` |
+| Custom Cloudflare resources, metering | `/guides/custom-bindings` |
+| Deploys, environments | `/concepts/deployment` |
+| Secrets | `/guides/secrets` |
+| Releases, rollback, deploy refusals | `/guides/releases-and-rollback` |
+| App ids, renames, undeploy, transfers | `/guides/app-identity` |
+| Source authority, GitHub vs DeepSpace source | `/guides/source-control` |
+| Workspaces, push/pull, activity | `/guides/workspaces` |
+| Custom domains | `/guides/custom-domains` |
+| Teammates on one app | `/guides/collaborators` |
+| Local dev server, worktrees, desktop preview | `/guides/dev-workflow` |
+| Building a whole app end to end | `/guides/building-an-app` |
+| Landing pages, visual design, product polish | `/design/overview` and the design section |
+| Tests | `/guides/testing` |
+| Native documentation sites | `/guides/documentation` |
+| Exact exports and signatures | `/sdk-reference/overview` and its per-module pages |
+| CLI output, exit codes, the `action` contract | `/cli-reference/overview` |
+| Any CLI command | `/cli-reference/commands` |
+
+Paths are relative to `https://docs.deep.space`; append `.md` for raw
+Markdown. The routes are the map, `llms.txt` is the territory: if a path
+here ever 404s, fetch the index — the docs may have moved a page, and the
+index is generated from them and cannot be stale.
 
 ## Operating sequence
 
@@ -113,6 +148,8 @@ codes and machine-executable `action` contract.
   shell environment prefixes, logs, commits, or screenshots.
 - Caller identity comes only from a verified JWT. Never send identity in a
   WebSocket URL or client-controlled internal headers.
+- The local `ToastProvider` and UI primitives come from `src/components/ui`,
+  not from the SDK.
 - Treat scaffold themes and the starter home as placeholders. Give shipped
   apps their own design.
 - Run apps on a supported Node line — the installation guide
