@@ -10,6 +10,7 @@ The integration endpoint catalog that lived in `assets/integrations/` is
 served live by the CLI: `npx deepspace integrations list` and
 `npx deepspace integrations info <integration>/<endpoint>`.
 
-This file also deliberately keeps `references/*.md` non-empty:
-create-build-service's Dockerfile asserts it when the agent image is built,
-so deleting this file fails that build.
+This file is ordering insurance: images built from a pre-cutover
+create-build-service assert `references/*.md` at bake time, and this file
+keeps that guard green. Once the cutover's relaxed guard (SKILL.md only) is
+everywhere, the file is just a browse-time pointer and may be dropped.

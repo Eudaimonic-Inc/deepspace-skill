@@ -37,7 +37,8 @@ Use whichever surface fits the moment:
   <https://docs.deep.space/llms.txt> for the full index with one-line
   summaries.
 - **In the app:** exact type signatures live in
-  `node_modules/deepspace/dist/{index,schema,worker,server,testing}.d.ts` —
+  `node_modules/deepspace/dist/*.d.ts` (index, schema, worker, server,
+  testing, documentation, documentation-react) —
   these are authoritative when any doc lags the installed version.
 
 Consult the docs BEFORE building in an area, not after something breaks: read
@@ -77,6 +78,7 @@ schemas, or sync behavior, and the CLI reference before scripting commands.
 | Tests | `/guides/testing` |
 | Native documentation sites | `/guides/documentation` |
 | Exact exports and signatures | `/sdk-reference/overview` and its per-module pages |
+| CLI output, exit codes, the `action` contract | `/cli-reference/overview` |
 | Any CLI command | `/cli-reference/commands` |
 
 Paths are relative to `https://docs.deep.space`; append `.md` for raw
