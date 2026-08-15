@@ -31,63 +31,32 @@ dirty bytes included). Never maintain two sources of truth: transfer with
 `deepspace app source`, and read the source-control and workspaces docs
 before any source, push, pull, or clone operation.
 
-## Consulting the documentation
+## How to read the documentation
 
-Consult the docs BEFORE building in an area, not after something breaks: read
-the matching guide when adding a feature, the concepts pages when touching
-`worker.ts`, schemas, or sync behavior, and the CLI reference before
-scripting commands. Use whichever surface fits the moment:
+Consult the docs BEFORE building in an area, not after something breaks. The
+reading procedure:
 
-- **MCP (preferred):** `https://docs.deep.space/mcp` exposes
-  `documentation_search` and `documentation_read`. Register it when your
-  harness supports MCP servers, e.g.
-  `claude mcp add --transport http deepspace-docs https://docs.deep.space/mcp`.
-- **Raw Markdown:** fetch <https://docs.deep.space/llms.txt> — the generated
-  index of every page with a one-line summary — then append `.md` to any page
-  URL (`https://docs.deep.space/guides/authentication.md`).
-- **In the app:** exact type signatures live in the installed package —
-  `ls node_modules/deepspace/dist/*.d.ts` — authoritative when any doc lags
-  the installed version.
+1. **Fetch the index once per task area:** <https://docs.deep.space/llms.txt>
+   — generated from the docs on every deploy, so it is never stale — lists
+   every page with a one-line summary.
+2. **Pick 1–2 pages from it and fetch each as Markdown** by appending `.md`
+   to the page URL (`https://docs.deep.space/guides/authentication.md`).
+3. **For point lookups, prefer MCP:** `https://docs.deep.space/mcp` exposes
+   `documentation_search` and `documentation_read`. Register it when your
+   harness supports MCP servers, e.g.
+   `claude mcp add --transport http deepspace-docs https://docs.deep.space/mcp`.
+4. **For exact type signatures, read the installed package** —
+   `ls node_modules/deepspace/dist/*.d.ts` — authoritative when any doc lags
+   the installed version.
 
-## Documentation router
-
-| When working on | Read |
-| --- | --- |
-| First app, project layout | `/get-started/quickstart`, `/get-started/project-structure` |
-| Worker, Durable Objects, scopes, WebSockets | `/concepts/architecture`, `/concepts/realtime-sync` |
-| Collections, permissions, visibility | `/concepts/data-model`, `/concepts/permissions`, `/guides/data-storage` |
-| Sign-in models, gated pages | `/guides/authentication` |
-| Messaging, presence, collaborative editing, canvas | `/guides/messaging`, `/guides/presence-and-cursors`, `/guides/collaborative-editing`, `/guides/canvas` |
-| AI chat, one-shot LLM calls | `/guides/ai-chat` |
-| Money flows | `/guides/payments` |
-| Privileged writes bypassing RBAC | `/guides/server-actions` |
-| Scheduled + background work | `/guides/scheduled-jobs`, `/guides/background-jobs` |
-| External APIs (`integration.post`) | `/guides/external-apis`, plus the live catalog: `npx deepspace integrations list` / `integrations info <integration>/<endpoint>` |
-| Google OAuth endpoints (`google/*`) | `/guides/google-oauth` |
-| Real-time audio/video rooms | `/guides/livekit` |
-| File uploads | `/guides/file-uploads` |
-| Custom Cloudflare resources, metering | `/guides/custom-bindings` |
-| Deploys, environments | `/concepts/deployment` |
-| Secrets | `/guides/secrets` |
-| Releases, rollback, deploy refusals | `/guides/releases-and-rollback` |
-| App ids, renames, undeploy, transfers | `/guides/app-identity` |
-| Source authority, GitHub vs DeepSpace source | `/guides/source-control` |
-| Workspaces, push/pull, activity | `/guides/workspaces` |
-| Custom domains | `/guides/custom-domains` |
-| Teammates on one app | `/guides/collaborators` |
-| Local dev server, worktrees, desktop preview | `/guides/dev-workflow` |
-| Building a whole app end to end | `/guides/building-an-app` |
-| Landing pages, visual design, product polish | `/design/overview` and the design section |
-| Tests | `/guides/testing` |
-| Native documentation sites | `/guides/documentation` |
-| Exact exports and signatures | `/sdk-reference/overview` and its per-module pages |
-| CLI output, exit codes, the `action` contract | `/cli-reference/overview` |
-| Any CLI command | `/cli-reference/commands` |
-
-Paths are relative to `https://docs.deep.space`; append `.md` for raw
-Markdown. The routes are the map, `llms.txt` is the territory: if a path
-here ever 404s, fetch the index — the docs may have moved a page, and the
-index is generated from them and cannot be stale.
+The docs' shape, so you pick pages fast: `/get-started/*` is setup and
+project layout; `/concepts/*` is the runtime model — read it before touching
+`worker.ts`, schemas, or sync behavior; `/guides/*` is one feature or
+lifecycle area per page; `/design/*` is visual design; `/sdk-reference/*` is
+exact exports per module; `/cli-reference/*` is the CLI, including its exit
+codes and machine-executable `action` contract. The catalogs are live CLI
+calls, not pages: `npx deepspace integrations list` / `integrations info
+<integration>/<endpoint>` and `npx deepspace add --list`.
 
 ## Operating sequence
 
