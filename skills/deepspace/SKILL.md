@@ -17,6 +17,58 @@ DeepSpace is one package for real-time collaborative apps on Cloudflare
 Workers. It provides auth, RBAC, synchronized records, messaging, integrations,
 payments, and deploys to `<name>.app.space`.
 
+This skill is the bootstrap: how to start, how to operate, and how to consult
+the documentation. The documentation at <https://docs.deep.space> is the
+authority for everything else — it is written to be opinionated, so when it
+recommends an approach, take that as the default rather than one option among
+many.
+
+## One source authority
+
+Every app has exactly one Git authority — DeepSpace source (packaged,
+commit-first) or GitHub source (manual; deploys ship the local working tree,
+dirty bytes included). Never maintain two sources of truth: transfer with
+`deepspace app source`, and read the source-control and workspaces docs
+before any source, push, pull, or clone operation.
+
+## How to read the documentation
+
+Consult the docs BEFORE building in an area, not after something breaks. The
+reading procedure:
+
+1. **Fetch the index once per task area:** <https://docs.deep.space/llms.txt>
+   — generated from the docs on every deploy, so it is never stale — lists
+   every page with a one-line summary.
+2. **Pick 1–2 pages from it and fetch each as Markdown** by appending `.md`
+   to the page URL (`https://docs.deep.space/guides/authentication.md`).
+   If the page you picked lacks the answer, do not wander adjacent pages —
+   go to step 3.
+3. **To prove whether a topic exists at all**, fetch
+   <https://docs.deep.space/llms-full.txt> once (the whole corpus in one
+   file; each page ends with `Source: /route.md`) and grep it. A confirmed
+   absence means the docs lag the build — fall back to the installed
+   `.d.ts` or the CLI's own `--help`.
+4. **For point lookups within known topics, prefer MCP:**
+   `https://docs.deep.space/mcp` exposes `documentation_search` and
+   `documentation_read`. Register it when your harness supports MCP servers,
+   e.g.
+   `claude mcp add --transport http deepspace-docs https://docs.deep.space/mcp`.
+   Search finds the exact section when the topic exists; it cannot tell you
+   a topic is absent — that is what step 3 is for.
+5. **For exact type signatures, read the installed package** —
+   `ls node_modules/deepspace/dist/*.d.ts` (in the SDK monorepo itself:
+   `packages/deepspace/dist/`) — authoritative when any doc lags the
+   installed version.
+
+The docs' shape, so you pick pages fast: `/get-started/*` is setup and
+project layout; `/concepts/*` is the runtime model — read it before touching
+`worker.ts`, schemas, or sync behavior; `/guides/*` is one feature or
+lifecycle area per page; `/design/*` is visual design; `/sdk-reference/*` is
+exact exports per module; `/cli-reference/*` is the CLI, including its exit
+codes and machine-executable `action` contract. The catalogs are live CLI
+calls, not pages: `npx deepspace integrations list` / `integrations info
+<integration>/<endpoint>` and `npx deepspace add --list`.
+
 ## Operating sequence
 
 1. **Authenticate before running app commands.**
@@ -63,15 +115,6 @@ payments, and deploys to `<name>.app.space`.
    Multi-user behavior needs a two-user test. Use a distinct port for parallel
    apps or worktrees. Never kill a sibling session's server.
 
-## Source authority
-
-Every app has exactly one Git authority. DeepSpace source is the packaged,
-commit-first workflow; GitHub source preserves the traditional manual workflow,
-including deploying local dirty or unpushed bytes without Git operations.
-Transfer with `deepspace app source`, never by maintaining two sources of truth.
-Read `references/source-control.md` before any source, workspace, push, pull,
-clone, or source-transfer operation.
-
 ## Rules that prevent expensive mistakes
 
 - Treat records as envelopes: fields are under `record.data`; `put(id, patch)`
@@ -89,29 +132,5 @@ clone, or source-transfer operation.
   not from the SDK.
 - Treat scaffold themes and the starter home as placeholders. Give shipped
   apps their own design.
-- Consumer apps support maintained Node lines: `>=22.15.0 <23`, `>=24 <25`, or
-  `>=26 <27`. The SDK repository uses Node 24 and pnpm 11. Its
-  `packageManager` selects CI/Corepack's exact minor while `engines.pnpm`
-  defines local compatibility. Do not replace a compatible bundled pnpm merely
-  to match the preferred minor.
-
-## Reference router
-
-Before editing a surface, read every matching reference below. Each reference's
-opening “Load…” gate is authoritative.
-
-- **Workflow and coordination:** `workflow.md`, `coordination.md`.
-- **CLI, source, and lifecycle:** `cli.md`, `source-control.md`,
-  `version-control.md`, `releases.md`, `github.md`, `deploy.md`, `secrets.md`,
-  `app-identity.md`, `collaborators.md`, `domain.md`.
-- **Data and runtime:** `sdk-reference.md`, `schemas.md`, `auth.md`,
-  `architecture.md`, `server-actions.md`, `bindings.md`.
-- **Features:** `ai-chat.md`, `cron.md`, `jobs.md`, `integrations.md`,
-  `payments.md`.
-- **Native documentation:** `native-docs.md`.
-- **Product quality:** `uiux.md`, `landing-design.md`, `testing.md`,
-  `preview.md`.
-
-Paths above are relative to this skill's `references/` directory. Integration
-schemas are in skill-relative `assets/integrations/`. Installed package `.d.ts`
-files are authoritative when a reference intentionally omits a low-use export.
+- Run apps on a supported Node line — the installation guide
+  (`/get-started/installation`) is the authority on which lines those are.
