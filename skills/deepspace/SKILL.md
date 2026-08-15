@@ -37,8 +37,8 @@ Use whichever surface fits the moment:
   <https://docs.deep.space/llms.txt> for the full index with one-line
   summaries.
 - **In the app:** exact type signatures live in
-  `node_modules/deepspace/dist/{index,worker,server,testing}.d.ts` — these are
-  authoritative when any doc lags the installed version.
+  `node_modules/deepspace/dist/{index,schema,worker,server,testing}.d.ts` —
+  these are authoritative when any doc lags the installed version.
 
 Consult the docs BEFORE building in an area, not after something breaks: read
 the matching guide when adding a feature (auth model, payments, jobs, cron,

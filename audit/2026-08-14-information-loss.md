@@ -1,13 +1,22 @@
 # Information-loss audit for the thin-out (2026-08-14)
 
+> **RESOLUTION (2026-08-14).** The absorption this audit demanded shipped in
+> deepdotspace-site#71: 16 new pages (including the design section and
+> google-oauth/livekit), the documented contradictions corrected, and the
+> version stamps removed. The body below is the historical evidence record,
+> not an open work queue. The merge gate for THIS PR is now: #71 merged +
+> deployed.
+
 Six parallel reviewers audited every file deleted by this PR against the live
 documentation (each page fetched as `.md`), adjudicating ambiguous cases
 against the SDK source. Deleted content was read from `git show HEAD~1:...`
 (commit `c686cf8` is the last full-content state). This file is the unit-level
 ledger; the PR comment carries the executive summary and the revised merge
-gate. Result across 30 reference files: 0 fully covered, ~24 partial,
-2 entirely missing; design tree absent from docs entirely; integration YAMLs
-partially lost. The docs self-declare CLI 0.12.0 against an SDK at 0.19.5,
+gate. Result across 30 reference files: 0 fully covered; 17 partial
+(Reviewers 1–3); 2 missing with the prior docs mapping wrong (google-oauth,
+livekit); and Reviewer 4's 9 lifecycle files effectively missing (no docs
+home); design tree absent from docs entirely; integration YAMLs partially
+lost. The docs self-declare CLI 0.12.0 against an SDK at 0.19.5,
 and in ~10 places the deleted references were silently correcting stale docs.
 
 ---
