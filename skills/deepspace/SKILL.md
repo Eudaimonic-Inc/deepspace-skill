@@ -41,8 +41,8 @@ reading procedure:
    every page with a one-line summary.
 2. **Pick 1–2 pages from it and fetch each as Markdown** by appending `.md`
    to the page URL (`https://docs.deep.space/guides/authentication.md`).
-   Fetch with curl (the edge 403s a `Python-urllib` User-Agent). If the page
-   you picked lacks the answer, do not wander adjacent pages — go to step 3.
+   If the page you picked lacks the answer, do not wander adjacent pages —
+   go to step 3.
 3. **To prove whether a topic exists at all**, fetch
    <https://docs.deep.space/llms-full.txt> once (the whole corpus in one
    file; each page ends with `Source: /route.md`) and grep it. A confirmed
