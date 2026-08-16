@@ -89,6 +89,11 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
    npx deepspace dev start
    ```
 
+   App ids are server-minted at registration. A logged-in scaffold registers
+   itself; one made while signed out has no id yet — after login, run
+   `npx deepspace app init` once. Any `app_not_registered` or
+   `app_not_initialized` refusal means exactly that and nothing else.
+
 3. **Inspect catalogs before hand-building a feature.** Names alone are not a
    sufficient fit check.
 
