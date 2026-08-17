@@ -27,9 +27,21 @@ many.
 
 Every app has exactly one Git authority — DeepSpace source (packaged,
 commit-first) or GitHub source (manual; deploys ship the local working tree,
-dirty bytes included). Never maintain two sources of truth: transfer with
-`deepspace app source`, and read the source-control and workspaces docs
-before any source, push, pull, or clone operation.
+dirty bytes included, and record no commit or branch). Never maintain two
+sources of truth: transfer with `deepspace app source`, and read the
+source-control and workspaces docs before any source, push, pull, or clone
+operation. GitHub source is claimed after the repo exists and the local HEAD
+is pushed to it (`app source github` reads `origin`); afterwards `push`,
+`pull`, and `clone` refuse (`source_managed_by_github`) — use Git.
+
+## Sharing and handing over an app
+
+`deepspace app collaborators add <email>` grants deploy **and plaintext
+read/write of every app secret**; collaborators cannot undeploy or transfer.
+`deepspace app transfer offer|status|accept|cancel` moves ownership: the
+offerer loses all access, collaborators stay on the app for the new owner,
+and `app list` shows offers waiting for you. Read the app-identity docs
+before either.
 
 ## How to read the documentation
 
@@ -79,7 +91,11 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
    ```
 
    Login opens browser OAuth and polls for up to ten minutes. Leave it in the
-   foreground and let the user finish it; never request or handle a password.
+   foreground and let the user finish it; never request, invent, or handle a
+   password. Headless (containers, CI): the operator supplies a real
+   account's credentials as `DEEPSPACE_EMAIL` / `DEEPSPACE_PASSWORD` in the
+   environment and `auth login` uses them without a browser — that is the
+   only non-interactive path; never paste a password on a command line.
 
 2. **Scaffold instead of assembling the runtime by hand.**
 
@@ -90,8 +106,11 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
    ```
 
    App ids are server-minted at registration. A logged-in scaffold registers
-   itself; one made while signed out has no id yet — after login, run
-   `npx deepspace app init` once. Any `app_not_registered` or
+   itself — under whatever login the shell holds, on the plane `DEEPSPACE_ENV`
+   selects (production when unset), so run `auth whoami` first so it lands on
+   the intended account (`--no-register`, 0.23.2+, skips it). One made while
+   signed out has no id yet — after login, run `npx deepspace app init` once;
+   a failed registration exits nonzero. Any `app_not_registered` or
    `app_not_initialized` refusal means exactly that and nothing else.
 
 3. **Inspect catalogs before hand-building a feature.** Names alone are not a
@@ -113,12 +132,14 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
 5. **Test runtime changes, then deploy.**
 
    ```bash
-   npx deepspace test run
+   npx deepspace test run        # smoke + api only; it names what it skipped
+   npx deepspace test run all    # every spec, including ones you added
    npx deepspace deploy
    ```
 
    Multi-user behavior needs a two-user test. Use a distinct port for parallel
-   apps or worktrees. Never kill a sibling session's server.
+   apps or worktrees. Never kill a sibling session's server. Under `--json`
+   the suite's own output streams on stderr; stdout is the one JSON line.
 
 ## Rules that prevent expensive mistakes
 
