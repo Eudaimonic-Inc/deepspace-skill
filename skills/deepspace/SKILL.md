@@ -29,7 +29,16 @@ Every app has exactly one Git authority — DeepSpace source (packaged,
 commit-first) or GitHub source (manual; deploys ship the local working tree,
 dirty bytes included). Never maintain two sources of truth: transfer with
 `deepspace app source`, and read the source-control and workspaces docs
-before any source, push, pull, or clone operation.
+before any source, push, pull, or clone operation — the docs, not this
+skill, state the claim order and what each verb does under each authority.
+
+## Sharing and handing over an app
+
+Collaborators and ownership transfer (`deepspace app collaborators …`,
+`deepspace app transfer …`) change who can deploy, read secrets, and own the
+app. Read the app-identity guide before either — it states exactly what each
+grant confers and what a transfer takes away — and treat both as decisions to
+surface to the user, not steps to run in passing.
 
 ## How to read the documentation
 
@@ -79,7 +88,10 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
    ```
 
    Login opens browser OAuth and polls for up to ten minutes. Leave it in the
-   foreground and let the user finish it; never request or handle a password.
+   foreground and let the user finish it; never request, invent, or handle a
+   password. Headless runs use the operator-supplied env credentials the CLI
+   reference documents (`auth login --help`); never put a password on a
+   command line.
 
 2. **Scaffold instead of assembling the runtime by hand.**
 
@@ -90,9 +102,11 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
    ```
 
    App ids are server-minted at registration. A logged-in scaffold registers
-   itself; one made while signed out has no id yet — after login, run
-   `npx deepspace app init` once. Any `app_not_registered` or
-   `app_not_initialized` refusal means exactly that and nothing else.
+   itself under the login and plane the shell holds — check `auth whoami`
+   first so it lands on the intended account. One made while signed out has
+   no id yet — after login, run `npx deepspace app init` once. Any
+   `app_not_registered` or `app_not_initialized` refusal means exactly that
+   and nothing else.
 
 3. **Inspect catalogs before hand-building a feature.** Names alone are not a
    sufficient fit check.
@@ -113,7 +127,8 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
 5. **Test runtime changes, then deploy.**
 
    ```bash
-   npx deepspace test run
+   npx deepspace test run        # the quick default; it names what it skipped
+   npx deepspace test run all    # every spec, including ones you added
    npx deepspace deploy
    ```
 
