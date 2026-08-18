@@ -89,8 +89,9 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
 
    Login opens browser OAuth and polls for up to ten minutes. Leave it in the
    foreground and let the user finish it; never request, invent, or handle a
-   password. Headless runs use the operator-supplied env credentials the CLI
-   reference documents (`auth login --help`); never put a password on a
+   password. A container or CI shell has no browser: run `auth login --help`
+   and use the operator-supplied env credentials it names — that help is the
+   authority on which variables they are — and never put a password on a
    command line.
 
 2. **Scaffold instead of assembling the runtime by hand.**
@@ -103,8 +104,11 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
 
    App ids are server-minted at registration. A logged-in scaffold registers
    itself under the login and plane the shell holds — check `auth whoami`
-   first so it lands on the intended account. One made while signed out has
-   no id yet — after login, run `npx deepspace app init` once. Any
+   first so it lands on the intended account. When the shell's login is not
+   the intended owner, scaffold with `--no-register` (see
+   `create-deepspace --help`) and run `npx deepspace app init` after logging
+   in as the owner, rather than minting an id you then have to throw away.
+   One made while signed out has no id yet — same recovery. Any
    `app_not_registered` or `app_not_initialized` refusal means exactly that
    and nothing else.
 
@@ -135,6 +139,23 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
    Multi-user behavior needs a two-user test. Use a distinct port for parallel
    apps or worktrees. Never kill a sibling session's server.
 
+## After the first deploy
+
+The sequence above does not end at `deploy` — the app has a life afterwards,
+and each part of it has a documented shape you should read before acting:
+
+- **Moving to a newer SDK** is `deepspace app update`, not a hand-edited
+  `package.json`. Read the CLI reference for it first: which CLI to run and
+  what it does to an existing pin are decisions, not defaults.
+- **Active apps consume a slot in your tier's quota.** A deploy or a fresh
+  registration can be refused for that reason alone, and the remedy is a
+  choice (free a slot or upgrade) — which is why that refusal ships no
+  executable action. Surface it to the user; do not pick for them.
+- **Taking an app down** is `deepspace app undeploy`. It is the most
+  destructive app command and the docs state exactly what it removes and what
+  survives. Read the app-identity guide before running it, and never run it
+  to "clean up" without the user asking.
+
 ## Rules that prevent expensive mistakes
 
 - Treat records as envelopes: fields are under `record.data`; `put(id, patch)`
@@ -148,6 +169,11 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
   shell environment prefixes, logs, commits, or screenshots.
 - Caller identity comes only from a verified JWT. Never send identity in a
   WebSocket URL or client-controlled internal headers.
+- A tool or server action that reads the `users` collection is not the same
+  thing as the client roster, and the two do not project the same fields to
+  the same people. Before exposing one to a model, a client, or a log, check
+  the permissions docs for what that path returns and to whom — "it reads
+  `users`" is not an answer.
 - The local `ToastProvider` and UI primitives come from `src/components/ui`,
   not from the SDK.
 - Treat scaffold themes and the starter home as placeholders. Give shipped
