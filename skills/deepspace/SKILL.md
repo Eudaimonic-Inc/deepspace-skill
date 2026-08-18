@@ -139,14 +139,60 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
    Multi-user behavior needs a two-user test. Use a distinct port for parallel
    apps or worktrees. Never kill a sibling session's server.
 
+## When a command refuses
+
+Every refusal is a stable `code`, an exit code, and at most one executable
+`action`. Branch on those, never on the prose:
+
+- **Exit 1** means fix the stated cause; retrying unchanged will not help.
+  **Exit 2** means the command did what it could and one local step or
+  judgment remains.
+- **Run the `action` when one is shipped** — as the argv it gives, in the
+  `cwd` it gives. **When none is shipped, do not guess a remedy.** Absence
+  is deliberate: the refusal names choices (fork or restore, finish or abort,
+  free a slot or upgrade) that belong to the user, or states a fact to
+  inspect. Read the message, then surface the choice.
+- The refusal itself now names the two states agents used to misdiagnose: a
+  **wrong plane** (`not_authenticated` says which plane the command selected,
+  which one holds your session, and which variable to unset — do not "log in
+  again") and a **malformed app id** (`invalid_app_id` — do not run `app
+  init`, which would orphan the app).
+
+The CLI overview (`/cli-reference/overview`) is the contract — exit codes,
+the `action` rules, and a table of codes by command. Do not pre-check
+preconditions with separate probes; run the operation and read its refusal.
+
+## Operate what you shipped
+
+A deploy that reports `serving: confirmed` is the start of the app's life,
+not the end of the task. Before declaring done, look at it running:
+
+```bash
+npx deepspace logs --follow --json   # what the worker actually did
+npx deepspace activity                # pushes, workspaces, releases
+npx deepspace releases                # the ledger, and what is rollback-able
+npx deepspace app usage               # credits, quota, per-integration spend
+```
+
+Two things the docs explain and you should not infer: a **schedule arms on
+the app's first request** (deploy sends one; the scheduled-jobs guide says
+what to check when it did not), and a **caught error is a `log` line, not an
+`exception`** — the `logs` reference says how to read `outcome` and
+`eventType` before you conclude an action failed or succeeded.
+
 ## After the first deploy
 
 The sequence above does not end at `deploy` — the app has a life afterwards,
 and each part of it has a documented shape you should read before acting:
 
 - **Moving to a newer SDK** is `deepspace app update`, not a hand-edited
-  `package.json`. Read the CLI reference for it first: which CLI to run and
-  what it does to an existing pin are decisions, not defaults.
+  `package.json`. Run the **newest** CLI first —
+  `npx deepspace@latest app update --dry-run --json` — and read
+  `manualInstructions` and `blockers` before installing anything; the
+  updating guide (`/guides/updating`) is the sequence, and the CLI reference
+  says what each field means. A scaffold older than server-minted ids
+  refuses `app_not_registered` at every turn; its one remedy is
+  `npx deepspace@latest app init --new-id`, which the guide explains.
 - **Active apps consume a slot in your tier's quota.** A deploy or a fresh
   registration can be refused for that reason alone, and the remedy is a
   choice (free a slot or upgrade) — which is why that refusal ships no
