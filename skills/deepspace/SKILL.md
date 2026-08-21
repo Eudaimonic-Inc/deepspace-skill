@@ -89,8 +89,9 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
 
    Login opens browser OAuth and polls for up to ten minutes. Leave it in the
    foreground and let the user finish it; never request, invent, or handle a
-   password. Headless runs use the operator-supplied env credentials the CLI
-   reference documents (`auth login --help`); never put a password on a
+   password. A container or CI shell has no browser: run `auth login --help`
+   and use the operator-supplied env credentials it names — that help is the
+   authority on which variables they are — and never put a password on a
    command line.
 
 2. **Scaffold instead of assembling the runtime by hand.**
@@ -103,8 +104,11 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
 
    App ids are server-minted at registration. A logged-in scaffold registers
    itself under the login and plane the shell holds — check `auth whoami`
-   first so it lands on the intended account. One made while signed out has
-   no id yet — after login, run `npx deepspace app init` once. Any
+   first so it lands on the intended account. When the shell's login is not
+   the intended owner, scaffold with `--no-register` (see
+   `create-deepspace --help`) and run `npx deepspace app init` after logging
+   in as the owner, rather than minting an id you then have to throw away.
+   One made while signed out has no id yet — same recovery. Any
    `app_not_registered` or `app_not_initialized` refusal means exactly that
    and nothing else.
 
@@ -135,6 +139,69 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
    Multi-user behavior needs a two-user test. Use a distinct port for parallel
    apps or worktrees. Never kill a sibling session's server.
 
+## When a command refuses
+
+Every refusal is a stable `code`, an exit code, and at most one executable
+`action`. Branch on those, never on the prose:
+
+- **Exit 1** means fix the stated cause; retrying unchanged will not help.
+  **Exit 2** means the command did what it could and one local step or
+  judgment remains.
+- **Run the `action` when one is shipped** — as the argv it gives, in the
+  `cwd` it gives. **When none is shipped, do not guess a remedy.** Absence
+  is deliberate: the refusal names choices (fork or restore, finish or abort,
+  free a slot or upgrade) that belong to the user, or states a fact to
+  inspect. Read the message, then surface the choice.
+- The refusal itself now names the two states agents used to misdiagnose: a
+  **wrong plane** (`not_authenticated` says which plane the command selected,
+  which one holds your session, and which variable to unset — do not "log in
+  again") and a **malformed app id** (`invalid_app_id` — do not run `app
+  init`, which would orphan the app).
+
+The CLI overview (`/cli-reference/overview`) is the contract — exit codes,
+the `action` rules, and a table of codes by command. Do not pre-check
+preconditions with separate probes; run the operation and read its refusal.
+
+## Operate what you shipped
+
+A deploy that reports `serving: confirmed` is the start of the app's life,
+not the end of the task. Before declaring done, look at it running:
+
+```bash
+npx deepspace logs --follow --json   # what the worker actually did
+npx deepspace activity                # pushes, workspaces, releases
+npx deepspace releases                # the ledger, and what is rollback-able
+npx deepspace app usage               # credits, quota, per-integration spend
+```
+
+Two things the docs explain and you should not infer: a **schedule arms on
+the app's first request** (deploy sends one; the scheduled-jobs guide says
+what to check when it did not), and a **caught error is a `log` line, not an
+`exception`** — the `logs` reference says how to read `outcome` and
+`eventType` before you conclude an action failed or succeeded.
+
+## After the first deploy
+
+The sequence above does not end at `deploy` — the app has a life afterwards,
+and each part of it has a documented shape you should read before acting:
+
+- **Moving to a newer SDK** is `deepspace app update`, not a hand-edited
+  `package.json`. Run the **newest** CLI first —
+  `npx deepspace@latest app update --json` — then follow its `steps`; it is a
+  read-only guide and never rewrites the app for you. The updating guide
+  (`/guides/updating`) is the sequence, and the CLI reference says what each
+  field means. A scaffold older than server-minted ids refuses
+  `app_not_registered` at every turn; its one remedy is
+  `npx deepspace@latest app init --new-id`, which the guide explains.
+- **Active apps consume a slot in your tier's quota.** A deploy or a fresh
+  registration can be refused for that reason alone, and the remedy is a
+  choice (free a slot or upgrade) — which is why that refusal ships no
+  executable action. Surface it to the user; do not pick for them.
+- **Taking an app down** is `deepspace app undeploy`. It is the most
+  destructive app command and the docs state exactly what it removes and what
+  survives. Read the app-identity guide before running it, and never run it
+  to "clean up" without the user asking.
+
 ## Rules that prevent expensive mistakes
 
 - Treat records as envelopes: fields are under `record.data`; `put(id, patch)`
@@ -148,6 +215,11 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
   shell environment prefixes, logs, commits, or screenshots.
 - Caller identity comes only from a verified JWT. Never send identity in a
   WebSocket URL or client-controlled internal headers.
+- A tool or server action that reads the `users` collection is not the same
+  thing as the client roster, and the two do not project the same fields to
+  the same people. Before exposing one to a model, a client, or a log, check
+  the permissions docs for what that path returns and to whom — "it reads
+  `users`" is not an answer.
 - The local `ToastProvider` and UI primitives come from `src/components/ui`,
   not from the SDK.
 - Treat scaffold themes and the starter home as placeholders. Give shipped
