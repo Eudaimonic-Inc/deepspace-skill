@@ -187,11 +187,11 @@ and each part of it has a documented shape you should read before acting:
 
 - **Moving to a newer SDK** is `deepspace app update`, not a hand-edited
   `package.json`. Run the **newest** CLI first —
-  `npx deepspace@latest app update --dry-run --json` — and read
-  `manualInstructions` and `blockers` before installing anything; the
-  updating guide (`/guides/updating`) is the sequence, and the CLI reference
-  says what each field means. A scaffold older than server-minted ids
-  refuses `app_not_registered` at every turn; its one remedy is
+  `npx deepspace@latest app update --json` — then follow its `steps`; it is a
+  read-only guide and never rewrites the app for you. The updating guide
+  (`/guides/updating`) is the sequence, and the CLI reference says what each
+  field means. A scaffold older than server-minted ids refuses
+  `app_not_registered` at every turn; its one remedy is
   `npx deepspace@latest app init --new-id`, which the guide explains.
 - **Active apps consume a slot in your tier's quota.** A deploy or a fresh
   registration can be refused for that reason alone, and the remedy is a
