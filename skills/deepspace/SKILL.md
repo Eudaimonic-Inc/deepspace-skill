@@ -139,36 +139,31 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
    Multi-user behavior needs a two-user test. Use a distinct port for parallel
    apps or worktrees. Never kill a sibling session's server.
 
-## One tool set for website and local agents
+## Shared agent tools
 
-When building an app, keep `buildTools` in `src/ai/tools.ts` as the one source
-of tool names, descriptions, schemas, and implementations. Register it once in
-`worker.ts` through the scaffold's coordinator instead of duplicating tools or
-mounting routes by hand:
+Keep `buildTools` in `src/ai/tools.ts` as the single tool definition and
+register it once in `worker.ts` with
+`registerAgent(app, { tools: buildTools })`; do not duplicate tools or mount
+the REST routes yourself. Both the website and local agent are enabled by
+default; use `local: false` or `inApp: false` for only one surface.
 
-```ts
-registerAgent(app, { tools: buildTools })
-```
+When access depends on app policy, pass a developer-owned
+`authorize({ userId, claims, request, env })` callback to `registerAgent`. It
+returns a boolean (or promise) for subscription, team, role, or app-data checks,
+applies to both surfaces after identity and membership verification, and can
+only narrow the app's existing RBAC.
 
-That enables both the website assistant and local agents by default. Use
-`local: false` or `inApp: false` when the app needs only one surface. An
-`authorize` callback can further restrict both surfaces by subscription, team,
-role, or other app-owned state; it does not replace verified app membership or
-the app's existing RBAC.
-
-A local agent must discover the app's tools before invoking one:
+A local agent discovers before invoking:
 
 ```bash
 npx deepspace agent tools <app> --json
 npx deepspace agent invoke <app> <tool> --input-file tool-input.json --json
 ```
 
-Choose a returned tool and construct its input from the returned schema; never
-guess either. These commands are stateless and reuse the selected CLI session,
-so there is no connect or separate consent step. A CLI login proves identity;
-it does not enroll someone who has never used the app. Use the CLI instead of
-calling the app's REST routes directly, and follow any refusal's `code` and
-`action` as described below.
+Use only a returned tool and follow its description and input schema. These
+stateless commands reuse the selected CLI session—there is no connect or
+separate consent step—but a CLI login proves identity, not app membership. Use
+the CLI rather than raw REST, and follow refusals as described below.
 
 ## When a command refuses
 
