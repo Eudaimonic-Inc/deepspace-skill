@@ -111,7 +111,7 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
    App ids are server-minted at registration, and apps **register on first
    use**: the first id-needing verb (`deploy`, `dev start`, `test run`,
    `push`, a `secrets` write) mints the id under whichever login and plane
-   the shell holds, announced on stderr with the account. Check
+   the shell holds, announced on stderr naming the account email. Check
    `auth whoami` BEFORE that first verb so the registration lands on the
    intended account; when the shell's login is not the intended owner, log
    in as the owner first (or run `npx deepspace app init` as them) rather
@@ -163,12 +163,15 @@ Every refusal is a stable `code`, an exit code, and at most one executable
 - The refusal itself now names the two states agents used to misdiagnose: a
   **wrong plane** (`not_authenticated` says which plane the command selected,
   which one holds your session, and which variable to unset — do not "log in
-  again") and a **malformed app id** (`invalid_app_id` for a bad `app_…`
-  value in wrangler.toml — do not run `app init`, which would orphan the
-  app). Via `--app` the codes differ: a malformed `app_…` value answers
-  `invalid_app`, and a non-`app_` string is treated as a subdomain NAME —
-  one that matches no app answers `app_not_found`, which means check the
-  spelling with `app list`, not that the id was malformed.
+  again") and a **malformed app id** (`invalid_app_id` for a
+  `DEEPSPACE_APP_ID` in wrangler.toml that is not a valid app id — do not
+  run `app init`, which would orphan the app). Via `--app` the codes
+  differ: a malformed `app_…` value answers `invalid_app`; a non-`app_`
+  string is treated as a subdomain NAME — one that is not a legal name
+  (uppercase, dots, wrong length) answers `invalid_app` without a lookup,
+  and a legal name that matches no app answers `app_not_found`, which
+  means check the spelling with `app list`, not that the id was
+  malformed.
 
 The CLI overview (`/cli-reference/overview`) is the contract — exit codes,
 the `action` rules, and a table of codes by command. Do not pre-check
