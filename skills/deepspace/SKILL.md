@@ -164,9 +164,10 @@ Every refusal is a stable `code`, an exit code, and at most one executable
   **wrong plane** (`not_authenticated` says which plane the command selected,
   which one holds your session, and which variable to unset — do not "log in
   again") and a **malformed app id** (`invalid_app_id` for a bad `app_…`
-  value in wrangler.toml or `--app` — do not run `app init`, which would
-  orphan the app). Note `--app` also accepts subdomain NAMES: a non-`app_`
-  string that matches no app answers `app_not_found`, which means check the
+  value in wrangler.toml — do not run `app init`, which would orphan the
+  app). Via `--app` the codes differ: a malformed `app_…` value answers
+  `invalid_app`, and a non-`app_` string is treated as a subdomain NAME —
+  one that matches no app answers `app_not_found`, which means check the
   spelling with `app list`, not that the id was malformed.
 
 The CLI overview (`/cli-reference/overview`) is the contract — exit codes,
