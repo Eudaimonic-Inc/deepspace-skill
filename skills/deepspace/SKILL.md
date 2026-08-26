@@ -165,13 +165,15 @@ Every refusal is a stable `code`, an exit code, and at most one executable
   which one holds your session, and which variable to unset — do not "log in
   again") and a **malformed app id** (`invalid_app_id` for a
   `DEEPSPACE_APP_ID` in wrangler.toml that is not a valid app id — do not
-  run `app init`, which would orphan the app). Via `--app` the codes
+  run `app init --new-id`, which would orphan the app; plain `app init`
+  refuses over a malformed id). Via `--app` the codes
   differ: a malformed `app_…` value answers `invalid_app`; a non-`app_`
   string is treated as a subdomain NAME — one that is not a legal name
   (uppercase, dots, wrong length) answers `invalid_app` without a lookup,
   and a legal name that matches no app answers `app_not_found`, which
   means check the spelling with `app list`, not that the id was
-  malformed.
+  malformed. (`transfer accept` is the one exception: it takes a raw
+  `app_…` id only and answers `invalid_app` for any name.)
 
 The CLI overview (`/cli-reference/overview`) is the contract — exit codes,
 the `action` rules, and a table of codes by command. Do not pre-check
