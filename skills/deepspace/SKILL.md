@@ -27,10 +27,16 @@ many.
 
 Every app has exactly one Git authority — DeepSpace source (packaged,
 commit-first) or GitHub source (manual; deploys ship the local working tree,
-dirty bytes included). Never maintain two sources of truth: transfer with
-`deepspace app source`, and read the source-control and workspaces docs
-before any source, push, pull, or clone operation — the docs, not this
-skill, state the claim order and what each verb does under each authority.
+dirty bytes included) — and as of v0.26.0 it is **inferred from use, never
+declared**. A checkout with a GitHub remote deploys as GitHub, no claim step;
+the first `deepspace push` (or an unclaimed app's deploy sync) claims
+DeepSpace source **once, permanently** — using it is choosing it, so never
+run `deepspace push` on a GitHub-centric app unless the user has chosen to
+adopt DeepSpace source. `deepspace app source` is read-only (the old setter
+refuses `source_inferred`); there are no transfers. Never maintain two
+sources of truth, and read the source-control and workspaces docs before any
+source, push, pull, or clone operation — the docs, not this skill, state
+what each verb does under each authority.
 
 ## Sharing and handing over an app
 
@@ -102,13 +108,15 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
    npx deepspace dev start
    ```
 
-   App ids are server-minted at registration. A logged-in scaffold registers
-   itself under the login and plane the shell holds — check `auth whoami`
-   first so it lands on the intended account. When the shell's login is not
-   the intended owner, scaffold with `--no-register` (see
-   `create-deepspace --help`) and run `npx deepspace app init` after logging
-   in as the owner, rather than minting an id you then have to throw away.
-   One made while signed out has no id yet — same recovery. Any
+   App ids are server-minted at registration, and apps **register on first
+   use**: the first id-needing verb (`deploy`, `dev start`, `test run`,
+   `push`, a `secrets` write) mints the id under whichever login and plane
+   the shell holds, announced on stderr naming the account email. Check
+   `auth whoami` BEFORE that first verb so the registration lands on the
+   intended account; when the shell's login is not the intended owner, log
+   in as the owner first (or run `npx deepspace app init` as them) rather
+   than minting an id you then have to throw away. A scaffold made while
+   signed out is fine — it registers the same way once someone logs in. Any
    `app_not_registered` or `app_not_initialized` refusal means exactly that
    and nothing else.
 
@@ -155,8 +163,17 @@ Every refusal is a stable `code`, an exit code, and at most one executable
 - The refusal itself now names the two states agents used to misdiagnose: a
   **wrong plane** (`not_authenticated` says which plane the command selected,
   which one holds your session, and which variable to unset — do not "log in
-  again") and a **malformed app id** (`invalid_app_id` — do not run `app
-  init`, which would orphan the app).
+  again") and a **malformed app id** (`invalid_app_id` for a
+  `DEEPSPACE_APP_ID` in wrangler.toml that is not a valid app id — do not
+  run `app init --new-id`, which would orphan the app; plain `app init`
+  refuses over a malformed id). Via `--app` the codes
+  differ: a malformed `app_…` value answers `invalid_app`; a non-`app_`
+  string is treated as a subdomain NAME — one that is not a legal name
+  (uppercase, dots, wrong length) answers `invalid_app` without a lookup,
+  and a legal name that matches no app answers `app_not_found`, which
+  means check the spelling with `app list`, not that the id was
+  malformed. (`transfer accept` is the one exception: it takes a raw
+  `app_…` id only and answers `invalid_app` for any name.)
 
 The CLI overview (`/cli-reference/overview`) is the contract — exit codes,
 the `action` rules, and a table of codes by command. Do not pre-check
