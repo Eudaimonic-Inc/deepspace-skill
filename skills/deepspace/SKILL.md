@@ -147,6 +147,32 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
    Multi-user behavior needs a two-user test. Use a distinct port for parallel
    apps or worktrees. Never kill a sibling session's server.
 
+## Shared agent tools
+
+Keep `buildTools` in `src/ai/tools.ts` as the single tool definition and
+register it once in `worker.ts` with
+`registerAgent(app, { tools: buildTools })`; do not duplicate tools or mount
+the REST routes yourself. Both the website and local agent are enabled by
+default; use `local: false` or `inApp: false` for only one surface.
+
+When access depends on app policy, pass a developer-owned
+`authorize({ userId, claims, request, env })` callback to `registerAgent`. It
+returns a boolean (or promise) for subscription, team, role, or app-data checks,
+applies to both surfaces after identity and membership verification, and can
+only narrow the app's existing RBAC.
+
+A local agent discovers before invoking:
+
+```bash
+npx deepspace agent tools <app> --json
+npx deepspace agent invoke <app> <tool> --input-file tool-input.json --json
+```
+
+Use only a returned tool and follow its description and input schema. These
+stateless commands reuse the selected CLI session—there is no connect or
+separate consent step—but a CLI login proves identity, not app membership. Use
+the CLI rather than raw REST, and follow refusals as described below.
+
 ## When a command refuses
 
 Every refusal is a stable `code`, an exit code, and at most one executable
