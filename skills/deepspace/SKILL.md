@@ -27,16 +27,18 @@ many.
 
 Every app has exactly one Git authority — DeepSpace source (packaged,
 commit-first) or GitHub source (manual; deploys ship the local working tree,
-dirty bytes included) — and as of v0.26.0 it is **inferred from use, never
-declared**. A checkout with a GitHub remote deploys as GitHub, no claim step;
-the first `deepspace push` (or an unclaimed app's deploy sync) claims
-DeepSpace source **once, permanently** — using it is choosing it, so never
-run `deepspace push` on a GitHub-centric app unless the user has chosen to
-adopt DeepSpace source. `deepspace app source` is read-only (the old setter
-refuses `source_inferred`); there are no transfers. Never maintain two
-sources of truth, and read the source-control and workspaces docs before any
-source, push, pull, or clone operation — the docs, not this skill, state
-what each verb does under each authority.
+dirty bytes included). A new app starts unclaimed, then its first
+source-producing action latches one authority **once, permanently**: a deploy
+from a checkout with a selected GitHub remote claims that repository, while
+the first `deepspace push` or a deploy without a GitHub remote claims
+DeepSpace. There is no manual declaration or later transfer. Never run
+`deepspace push` before the first GitHub deploy unless the user has chosen
+DeepSpace source; after a GitHub claim, all DeepSpace source verbs refuse with
+`source_managed_by_github`. `deepspace app source` is read-only (the old
+setter refuses `source_inferred`). Never maintain two sources of truth, and
+read the source-control and workspaces docs before any source, push, pull, or
+clone operation — the docs, not this skill, state what each verb does under
+each authority.
 
 ## Sharing and handing over an app
 
