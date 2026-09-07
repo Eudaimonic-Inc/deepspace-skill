@@ -105,6 +105,13 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
 
 2. **Scaffold instead of assembling the runtime by hand.**
 
+   Use a supported Node version from the installation docs and **npm 11.6+
+   for npm-based scaffolds**. Check `node --version` and `npm --version`
+   first: npm 10's peer resolver can crash on the template's Vitest dependency
+   even when Node is supported. If installation fails, retain the actual error
+   and runtime versions before diagnosing it or choosing a recovery; keep the
+   app's selected package manager and lockfile consistent.
+
    ```bash
    npm create deepspace@latest <app-name>
    cd <app-name>
