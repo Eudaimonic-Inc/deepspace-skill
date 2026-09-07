@@ -65,13 +65,14 @@ reading procedure:
    file; each page ends with `Source: /route.md`) and grep it. A confirmed
    absence means the docs lag the build — fall back to the installed
    `.d.ts` or the CLI's own `--help`.
-4. **For point lookups within known topics, prefer MCP:**
+4. **Use MCP for point lookups when its tools are already available:**
    `https://docs.deep.space/mcp` exposes `documentation_search` and
-   `documentation_read`. Register it when your harness supports MCP servers,
-   e.g.
-   `claude mcp add --transport http deepspace-docs https://docs.deep.space/mcp`.
-   Search finds the exact section when the topic exists; it cannot tell you
-   a topic is absent — that is what step 3 is for.
+   `documentation_read`. If those tools are unavailable or fail, use the
+   Markdown URLs above with the harness's existing fetch tool or a bounded
+   HTTP request (for example, `curl -fsSL --max-time 20 <url>`). Building an
+   app does not require MCP registration: configure a docs server only when
+   the user asks for that setup, and keep it separate from dependency-install
+   recovery. Search cannot prove a topic is absent — use step 3 for that.
 5. **For exact type signatures, read the installed package** —
    `ls node_modules/deepspace/dist/*.d.ts` (in the SDK monorepo itself:
    `packages/deepspace/dist/`) — authoritative when any doc lags the
@@ -103,6 +104,13 @@ calls, not pages: `npx deepspace integrations list` / `integrations info
    command line.
 
 2. **Scaffold instead of assembling the runtime by hand.**
+
+   Use a supported Node version from the installation docs and **npm 11.6+
+   for npm-based scaffolds**. Check `node --version` and `npm --version`
+   first: npm 10's peer resolver can crash on the template's Vitest dependency
+   even when Node is supported. If installation fails, retain the actual error
+   and runtime versions before diagnosing it or choosing a recovery; keep the
+   app's selected package manager and lockfile consistent.
 
    ```bash
    npm create deepspace@latest <app-name>
