@@ -250,6 +250,13 @@ and each part of it has a documented shape you should read before acting:
   registration can be refused for that reason alone, and the remedy is a
   choice (free a slot or upgrade) — which is why that refusal ships no
   executable action. Surface it to the user; do not pick for them.
+- **Connecting a domain you already own** is different from buying one. Read
+  the custom-domains guide before either. Keep an externally registered domain
+  at its registrar, use the supported external-domain attach/verify flow, and
+  follow the returned DNS records. Prove ownership before claiming routing;
+  never substitute an ad hoc reverse proxy or an internal registry write.
+  Keep certificate-validation records needed for renewal, and verify the app
+  through HTTPS on the custom hostname before calling the connection complete.
 - **Taking an app down** is `deepspace app undeploy`. It is the most
   destructive app command and the docs state exactly what it removes and what
   survives. Read the app-identity guide before running it, and never run it
